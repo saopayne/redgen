@@ -1,0 +1,45 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "OFu4xJEIjiI8Suu+j/gabfp+y6Q=",
+			"origin": "github.com/stretchr/testify/vendor/github.com/davecgh/go-spew/spew",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "05e8a0eda380579888eb53c394909df027f06991",
+			"revisionTime": "2017-07-13T16:51:06Z"
+		},
+		{
+			"checksumSHA1": "LrOnRW6KCAcKDnKPs+Hibtb7Duk=",
+			"path": "github.com/dghubble/sling",
+			"revision": "80ec33c6152a53edb5545864ca37567b506c4ca5",
+			"revisionTime": "2017-06-29T03:54:44Z"
+		},
+		{
+			"checksumSHA1": "3r84DempU58Rk+2cHKrV8qc3l98=",
+			"path": "github.com/go-ozzo/ozzo-validation",
+			"revision": "85dcd8368eba387e65a03488b003e233994e87e9",
+			"revisionTime": "2017-09-13T16:42:39Z"
+		},
+		{
+			"checksumSHA1": "p3IB18uJRs4dL2K5yx24MrLYE9A=",
+			"path": "github.com/google/go-querystring/query",
+			"revision": "53e6ce116135b80d037921a7fdd5138cf32d7a8a",
+			"revisionTime": "2017-01-11T10:11:55Z"
+		},
+		{
+			"checksumSHA1": "zKKp5SZ3d3ycKe4EKMNT0BqAWBw=",
+			"origin": "github.com/stretchr/testify/vendor/github.com/pmezard/go-difflib/difflib",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "05e8a0eda380579888eb53c394909df027f06991",
+			"revisionTime": "2017-07-13T16:51:06Z"
+		},
+		{
+			"checksumSHA1": "J+ppEq6nYMKxhB9+c+MD1x9UwSc=",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "05e8a0eda380579888eb53c394909df027f06991",
+			"revisionTime": "2017-07-13T16:51:06Z"
+		}
+	],
+	"rootPath": "github.com/saopayne/Enectiva/andy"
+}
