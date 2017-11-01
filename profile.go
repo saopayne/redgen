@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"regexp"
 
 	"github.com/gizak/termui"
 	"github.com/go-ozzo/ozzo-validation"
@@ -46,31 +47,45 @@ type Start struct {
 }
 
 // Save writes the profile JSON into a file, so it can be recovered later
-func (p Profile) Save() {
-	err := WriteProfileToFile(p, strings.ToLower(p.Name)+"_readings.json")
+func Save(p Profile) {
+	err := WriteProfileToFile(p, SanitizeName(p.Name)+"_readings.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
+// Handles the formatting of name, converting to lowercase,
+// trim whitespaces, replace spaces with underscore and replace non-ASCII characters
+func SanitizeName(name string) string {
+	trimmedName := strings.TrimSpace(name)
+	lowerCaseName := strings.ToLower(trimmedName)
+	// replace spaces in between the names with underscore
+	sanitizedName := strings.Replace(lowerCaseName, " ", "_", -1)
+	// remove non-ASCII characters
+	re := regexp.MustCompile("[[:^ascii:]]")
+	sanitizedName = re.ReplaceAllLiteralString(sanitizedName, "")
+
+	return sanitizedName
+}
+
 func (p Profile) SetName(newName string) {
 	p.Name = newName
-	p.Save()
+	Save(p)
 }
 
 func (p Profile) SetVariability(newVariability float64) {
 	p.Variability = newVariability
-	p.Save()
+	Save(p)
 }
 
 func (p Profile) SetUnit(newUnit string) {
 	p.Unit = newUnit
-	p.Save()
+	Save(p)
 }
 
 func (p Profile) SetBaseDailyConsumption(baseConsumption float64) {
 	p.BaseDailyConsumption = baseConsumption
-	p.Save()
+	Save(p)
 }
 
 // StartAt mocks a clock based on the configuration file (Year,Month, Day and Hour are configurable)
@@ -80,12 +95,12 @@ func (p Profile) StartAt() (time.Time, float64, error) {
 		state    float64
 		date     time.Time
 		err      error
-		readings = len(p.Readings)
+		count = len(p.Readings)
 	)
 
-	if readings != 0 {
-		state = p.Readings[readings-1].State
-		date, err = time.Parse("2010-01-02 15:04:05.999999999 MST", p.Readings[readings-1].Time)
+	if count != 0 {
+		state = p.Readings[count-1].State
+		date, err = time.Parse("2010-01-02 15:04:05.999999999 MST", p.Readings[count-1].Time)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -186,7 +201,7 @@ func GenerateReadings(profile Profile) {
 		PrintJSONReading(reading)
 
 		state = profile.Readings[len(profile.Readings)-1].State
-		profile.Save()
+		Save(profile)
 
 		time.Sleep(5 * time.Second)
 		date = date.Add(profile.Interval * time.Minute)

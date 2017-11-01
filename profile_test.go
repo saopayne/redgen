@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateProfile(t *testing.T) {
@@ -48,4 +49,11 @@ func TestLoadProfile(t *testing.T) {
 	if !reflect.DeepEqual(expectedProfile, profile) {
 		t.Errorf("Expected:\n %+v,\n\ngot:\n %+v", expectedProfile, profile)
 	}
+}
+
+func TestSanitizeName(t *testing.T) {
+	sampleName := " Sample Name "
+	expectedResult := "sample_name"
+	actualResult := SanitizeName(sampleName)
+	assert.EqualValues(t, expectedResult, actualResult)
 }

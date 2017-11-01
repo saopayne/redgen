@@ -211,9 +211,9 @@ func CmdSendReadingsToServer(filename string) {
 		fmt.Println("The profile is not a valid profile")
 		log.Fatal(err)
 	}
-	profileService := new(ProfileService)
+	librarianService := new(LibrarianService)
 	// send the readings to the api at this point
-	resp, err := profileService.sendReadingsAction(profile)
+	resp, err := librarianService.sendReadingsAction(profile)
 	fmt.Println("SendReadingsAction() httpResp", resp)
 
 	ping := func() { fmt.Println("#") }
