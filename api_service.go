@@ -8,6 +8,7 @@ import (
 	"time"
 	"encoding/json"
 	"bytes"
+	"log"
 )
 
 const (
@@ -17,9 +18,16 @@ const (
 	HeaderContentType = "application/vnd.api+json"
 )
 
-// ProfileService provides methods for creating readings.
-type ProfileService struct {
-	sling *sling.Sling
+var httpClient = &http.Client{
+	Timeout: time.Second * 10,
+}
+
+// LibrarianService provides methods for sending readings to the API
+type LibrarianService struct {
+	sling 		*sling.Sling
+	URL 		string
+	Auth		string
+	HttpType	string
 }
 
 // Response is a simplified data the enectiva API sends
@@ -28,11 +36,7 @@ type Response struct {
 	Body string `json:"body"`
 }
 
-type PostData struct {
-	Data  Reading  `json:"data"`
-}
-
-type ProfileError struct {
+type LibrarianError struct {
 	Message string `json:"message"`
 	Errors  []struct {
 		Resource string `json:"resource"`
@@ -41,7 +45,7 @@ type ProfileError struct {
 	} `json:"errors"`
 }
 
-func (e ProfileError) Error() string {
+func (e LibrarianError) Error() string {
 	return fmt.Sprintf("enectiva reading: %v %+v", e.Message, e.Errors)
 }
 
@@ -69,26 +73,37 @@ func sendReadingsSchedule(action func(), delay time.Duration) chan bool {
 // Given a series, this function goes through the readings in the series
 // For each given given, send the reading to the API
 // If the POST was successful, remove from temp storage and avoid retry
-func (s *ProfileService) sendReadingsAction(p Profile) (*http.Response, error) {
-	for reading := range p.Readings {
-		//readingError := new(ProfileError)
-		eachReading := p.Readings[reading]
+func (s *LibrarianService) sendReadingsAction(p Profile) (*http.Response, error) {
+	service := &LibrarianService{
+		URL: ApiUrl,
+		Auth: Authorization,
+		HttpType: http.MethodPost,
+	}
+	totalReadings := len(p.Readings)
+
+	for i := 0; i < totalReadings; i++ {
+		eachReading := p.Readings[i]
 		eachReading.MeterId = "test"
 		eachReading.Sender = "ademola"
-		postData := &PostData{ Data: eachReading}
+		postData := map[string]Reading{"data": eachReading}
 		jsonReading, err := json.Marshal(postData)
 		fmt.Println(jsonReading)
-		req, err := BuildHTTPRequest("POST", Authorization, ApiUrl, jsonReading)
+		req, err := service.BuildHTTPRequest(jsonReading)
 		if err != nil {
 			return nil, err
 		}
 
-		resp, err := SendHTTPRequest(req)
+		resp, err := SendHTTPRequest(httpClient, req)
 		if err != nil {
 			return nil, err
 		}
 		fmt.Println("response Status:", resp.Status)
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, err := ioutil.ReadAll(resp.Body)
+		defer resp.Body.Close()
+
+		if err != nil {
+			log.Fatal(err)
+		}
 		fmt.Println("response Body:", string(body))
 		return resp, err
 	}
@@ -96,21 +111,19 @@ func (s *ProfileService) sendReadingsAction(p Profile) (*http.Response, error) {
 }
 
 //BuildHTTPRequest builds a request (Sets Body and Header)
-func BuildHTTPRequest(httpType string, auth string, url string, body []byte) (*http.Request, error) {
-	req, err := http.NewRequest(httpType, url, bytes.NewBuffer(body))
+func (s *LibrarianService) BuildHTTPRequest(body []byte) (*http.Request, error) {
+	req, err := http.NewRequest(s.HttpType, s.URL, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Accept", HeaderContentType)
 	req.Header.Add("Content-Type", HeaderContentType)
-	req.Header.Add("Authorization", auth)
+	req.Header.Add("Authorization", s.Auth)
 	return req, nil
 }
 
 //SendHTTPRequest sends the request and returns a response from SMC Server
-func SendHTTPRequest(req *http.Request) (*http.Response, error) {
-	client := &http.Client{}
-
+func SendHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
