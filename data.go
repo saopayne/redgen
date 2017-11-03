@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 var weekDays = map[string]time.Weekday{
 	"Mon": time.Monday,
@@ -29,16 +32,16 @@ var months = map[string]time.Month{
 }
 
 var defaultHourlyProfile = map[string]float64{
-	"0": 1,
-	"1": 1,
-	"2": 1,
-	"3": 1,
-	"4": 1,
-	"5": 1,
-	"6": 1,
-	"7": 1,
-	"8": 1,
-	"9": 1,
+	"0":  1,
+	"1":  1,
+	"2":  1,
+	"3":  1,
+	"4":  1,
+	"5":  1,
+	"6":  1,
+	"7":  1,
+	"8":  1,
+	"9":  1,
 	"10": 1,
 	"11": 1,
 	"12": 1,
@@ -78,4 +81,9 @@ var defaultMonthlyProfile = map[string]float64{
 	"Oct": 1,
 	"Nov": 1,
 	"Dec": 1,
+}
+
+func FloatToString(input_num float64) string {
+	// to convert a float number to a string
+	return strconv.FormatFloat(input_num, 'f', 0, 64)
 }

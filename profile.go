@@ -7,12 +7,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
-	"regexp"
 
 	"github.com/gizak/termui"
-	"github.com/go-ozzo/ozzo-validation"
 	"github.com/olekukonko/tablewriter"
 	"sort"
 )
@@ -20,8 +19,12 @@ import (
 const DefaultProfile = "DefaultProfile"
 
 var (
-	defaultProfilePath = filepath.Join(".", "profiles")
-	defaultProfileName = "default_config.json"
+	defaultProfilePath  = filepath.Join(".", "profiles")
+	defaultReadingsPath = filepath.Join(".", "readings")
+	parseFolderPath     = filepath.Join(".", "parse")
+	parseableFileName   = "parseable.txt"
+	unparseableFileName = "unparseable.txt"
+	defaultProfileName  = "default_config.json"
 )
 
 // Profile represents a demonstration account profile
@@ -34,21 +37,30 @@ type Profile struct {
 	Variability          float64            `json:"variability"`
 	Unit                 string             `json:"unit"`
 	Interval             time.Duration      `json:"interval"`
-	Start                Start              `json:"startAt"`
+	Start                time.Time          `json:"startAt"`
 	Readings             []Reading          `json:"readings"`
 }
 
 // Start represents a partially mocked clock
+// default timezone is UTC
 type Start struct {
 	Year  int    `json:"year,omitempty"`
-	Day   int 	 `json:"day,omitempty"`
+	Day   int    `json:"day,omitempty"`
 	Month string `json:"month"`
 	Hour  int    `json:"hour"`
 }
 
 // Save writes the profile JSON into a file, so it can be recovered later
 func Save(p Profile) {
-	err := WriteProfileToFile(p, SanitizeName(p.Name)+"_readings.json")
+	err := WriteProfileToFile(p, SanitizeName(p.Name)+".json")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// Save writes the profile JSON into a file, so it can be recovered later
+func SaveReadings(p Profile) {
+	err := WriteReadingsToFile(p, SanitizeName(p.Name)+".json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -92,9 +104,9 @@ func (p Profile) SetBaseDailyConsumption(baseConsumption float64) {
 // The clock will always start in the current year(if the year is not set), day 1, in 0 minutes, seconds and nseconds.
 func (p Profile) StartAt() (time.Time, float64, error) {
 	var (
-		state    float64
-		date     time.Time
-		err      error
+		state float64
+		date  time.Time
+		err   error
 		count = len(p.Readings)
 	)
 
@@ -106,20 +118,13 @@ func (p Profile) StartAt() (time.Time, float64, error) {
 		}
 		date = date.Add(p.Interval * time.Minute)
 	} else {
-		if p.Start.Hour > 23 {
+		if p.Start.Hour() > 23 {
 			return time.Time{}, state, fmt.Errorf("invalid starting hour in configuration file: %d", p.Start.Hour)
 		}
-		month, ok := months[p.Start.Month]
+		p.Start.Month()
+		month, ok := months[p.Start.Month().String()[:3]]
 		if ok {
-			startYear := p.Start.Year
-			startDay := p.Start.Day
-			if validation.IsEmpty(p.Start.Year) {
-				startYear = time.Now().Year()
-			}
-			if validation.IsEmpty(p.Start.Day) {
-				startDay = 1
-			}
-			return time.Date(startYear, month, startDay, p.Start.Hour, 0, 0, 0, time.UTC), state, nil
+			return time.Date(p.Start.Year(), month, p.Start.Day(), p.Start.Hour(), 0, 0, 0, time.UTC), state, nil
 		}
 		return time.Time{}, state, fmt.Errorf("invalid starting month in configuration file: %s", p.Start.Month)
 	}
@@ -133,14 +138,25 @@ func WriteProfileToFile(profile Profile, profileFile string) error {
 	if err != nil {
 		return err
 	}
-
 	os.MkdirAll(defaultProfilePath, os.ModePerm)
+	sanitizedProfileName := SanitizeName(profileFile)
+	err = ioutil.WriteFile(filepath.Join(defaultProfilePath, sanitizedProfileName), jsonBytes, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
+func WriteReadingsToFile(profile Profile, profileFile string) error {
+	jsonBytes, err := json.MarshalIndent(profile, "", "  ")
+	if err != nil {
+		return err
+	}
+	os.MkdirAll(defaultReadingsPath, os.ModePerm)
 	err = ioutil.WriteFile(filepath.Join(defaultProfilePath, profileFile), jsonBytes, 0644)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -156,9 +172,15 @@ func NewProfileFromJson(profileBytes []byte) (Profile, error) {
 }
 
 // createDefaultProfile returns a Profile object with the default configuration
-func CreateDefaultProfile() Profile {
+func CreateDefaultProfile(name string) Profile {
+	selectedName := ""
+	if name == "" {
+		selectedName = DefaultProfile
+	} else {
+		selectedName = name
+	}
 	return Profile{
-		Name:                 DefaultProfile,
+		Name:                 selectedName,
 		BaseDailyConsumption: 18,
 		HourlyProfiles:       defaultHourlyProfile,
 		WeeklyProfiles:       defaultWeeklyProfile,
@@ -166,13 +188,8 @@ func CreateDefaultProfile() Profile {
 		Variability:          5,
 		Interval:             15,
 		Unit:                 "kW",
-		Start: Start{
-			Year:  2017,
-			Month: "Jan",
-			Day: 1,
-			Hour:  06,
-		},
-		Readings: make([]Reading, 0),
+		Start:                time.Date(2017, 1, 1, 1, 0, 0, 0, time.UTC),
+		Readings:             make([]Reading, 0),
 	}
 }
 
@@ -201,7 +218,7 @@ func GenerateReadings(profile Profile) {
 		PrintJSONReading(reading)
 
 		state = profile.Readings[len(profile.Readings)-1].State
-		Save(profile)
+		SaveReadings(profile)
 
 		time.Sleep(5 * time.Second)
 		date = date.Add(profile.Interval * time.Minute)

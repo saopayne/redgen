@@ -75,7 +75,7 @@ func IsIntValueInList(value int, list []int) bool {
 // greater than zero and that the hour key is a valid value
 // It also checks that for higher units, an abnormal large number isn't set
 func ValidateHourlyProfiles(p Profile) error {
-	hoursOfDay := []string{"00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11",
+	hoursOfDay := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11",
 		"12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"}
 	var err error
 	if validation.IsEmpty(p.HourlyProfiles) {
@@ -222,19 +222,19 @@ func ValidateStart(p Profile) error {
 		err = errors.New("the start date of the profile must be set")
 	}
 
-	if !IsValueInList(start.Month, months) {
+	if !IsValueInList(start.Month().String()[:3], months) {
 		// The week entered is not valid
 		errorString := fmt.Sprintf("the value set for month %+v is not valid, must be one of: %+v", start.Month, months)
 		err = errors.New(errorString)
 	}
 
-	if !IsIntValueInList(start.Hour, hoursOfDay) {
+	if !IsIntValueInList(start.Hour(), hoursOfDay) {
 		// The hour set isn't a valid hour
 		errorString := fmt.Sprintf("the hour %+v is not a valid hour, should be one of: %+v", start.Hour, hoursOfDay)
 		err = errors.New(errorString)
 	}
 
-	if start.Year <= 1990 || start.Year > 2030 {
+	if start.Year() <= 1990 || start.Year() > 2030 {
 		err = errors.New("the year set must be within 1990 and 2030")
 	}
 
@@ -295,53 +295,55 @@ func ValidateUnit(p Profile) error {
 func (p *Profile) ValidateProfile() error {
 	err := ValidateName(*p)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("Profile name is valid")
+
 	err = ValidateUnit(*p)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("Profile unit is valid")
+
 	err = ValidateHourlyProfiles(*p)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("Hourly Profiles are valid")
+
 	err = ValidateWeeklyProfiles(*p)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("Weekly Profiles are valid")
+
 	err = ValidateMonthlyProfiles(*p)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("Monthly Profiles are valid")
+
 	err = ValidateStart(*p)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("The Start time of the profile is valid")
+
 	err = ValidateReadings(*p)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("The readings are valid")
+
 	err = ValidateVariability(*p)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("The profile variability specified is valid")
+
 	err = ValidateInterval(*p)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("The profile interval specified is valid")
+
 	err = ValidateBaseDailyConsumption(*p)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("The base daily consumption is valid")
+
+	message := fmt.Sprintf("The configuration for profile: %s is valid ", p.Name)
+	fmt.Println(message)
 	return nil
 }

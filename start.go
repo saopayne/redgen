@@ -1,14 +1,23 @@
 package main
 
 import (
+	binary "encoding/binary"
 	"fmt"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
+
+var (
+	parseableFileFullPath   = filepath.Join(parseFolderPath, parseableFileName)
+	unparseableFileFullPath = filepath.Join(parseFolderPath, unparseableFileName)
+)
+
+const maxInt32 = 1<<(32-1) - 1
 
 // Parse the commands passed to the generator from the command line
 func ParseCLICommands() (string, error) {
@@ -20,10 +29,15 @@ func ParseCLICommands() (string, error) {
 	// cmd: andy config version
 	case andyVersion.FullCommand():
 		return helpVersion, nil
+	case andyConfigStart.FullCommand():
+		InitGenerator()
+		return "", nil
 	// cmd: andy config generate "file.json"
 	case andyConfigGenerate.FullCommand():
 		if *andyConfigGenerateArg != "" {
-			err := WriteProfileToFile(CreateDefaultProfile(), *andyConfigGenerateArg)
+			namesArr := strings.Split(*andyConfigGenerateArg, ".")
+			extractedName := SanitizeName(namesArr[0])
+			err := WriteProfileToFile(CreateDefaultProfile(extractedName), *andyConfigGenerateArg)
 			if err != nil {
 				log.Fatal(err.Error())
 			}
@@ -33,7 +47,7 @@ func ParseCLICommands() (string, error) {
 		}
 	// cmd: andy config init
 	case andyConfigInit.FullCommand():
-		err := WriteProfileToFile(CreateDefaultProfile(), defaultProfileName)
+		err := WriteProfileToFile(CreateDefaultProfile(""), defaultProfileName)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -221,5 +235,130 @@ func CmdSendReadingsToServer(filename string) {
 	time.Sleep(25 * time.Millisecond)
 	stop <- true
 	time.Sleep(25 * time.Millisecond)
+}
 
+// check all configurations and log the unparseable ones
+// maintain two list of parseable and unparseable (with names)
+// check if profile name exists in both files, if not, validate the file and
+// append to parseable | unparseable list
+func InitGenerator() {
+	parseableFileNamesList, unparseableFileNamesList := GetAppendedParsedFileNames()
+	fmt.Println(parseableFileNamesList)
+	fmt.Println(unparseableFileNamesList)
+}
+
+// GetAppendedParsedFileNames gets the 2 slices each containing valid and invalid names of files
+// It writes the list to a persistent file instead of keeping in memory
+// Returns list of the saved invalid and valid config file names
+func GetAppendedParsedFileNames() (validFileNames []string, invalidFileNames []string) {
+	parseableNamesList, unparseableNamesList := SplitParseableConfigFiles()
+	os.MkdirAll(parseFolderPath, os.ModePerm)
+	if _, err := os.Stat(parseableFileFullPath); os.IsNotExist(err) {
+		// does not exist
+		_, err = os.Create(parseableFileFullPath)
+	}
+	parseableNamesBytes := EncodeFileNamesAsBytes(parseableNamesList)
+	err := ioutil.WriteFile(parseableFileFullPath, parseableNamesBytes, 0644)
+	checkWithPanic(err)
+
+	if _, err := os.Stat(unparseableFileFullPath); os.IsNotExist(err) {
+		// does not exist
+		_, err = os.Create(unparseableFileFullPath)
+	}
+	unparseableNamesBytes := EncodeFileNamesAsBytes(unparseableNamesList)
+	err = ioutil.WriteFile(unparseableFileFullPath, unparseableNamesBytes, 0644)
+	checkWithPanic(err)
+
+	parseableFileBytes, err := ioutil.ReadFile(parseableFileFullPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	parseableFileNamesList := DecodeBytesAsFileNames(parseableFileBytes)
+
+	unparseableFileBytes, err := ioutil.ReadFile(unparseableFileFullPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	unparseableFileNamesList := DecodeBytesAsFileNames(unparseableFileBytes)
+
+	return parseableFileNamesList, unparseableFileNamesList
+}
+
+// SplitParseableConfigFiles scans the profiles directory and for each json configuration file,
+// it creates two slices
+// > Slice 1 to store a list of the names of the config files which are valid
+// > Slice 2 to store a list of the names of the config files which are invalid
+func SplitParseableConfigFiles() (parseableList []string, unparseableList []string) {
+	// return list of parseable files
+	files, err := ioutil.ReadDir(defaultProfilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var parseableNamesList []string
+	var unparseableNamesList []string
+	for _, f := range files {
+		fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, f.Name()))
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		profile, err := NewProfileFromJson(fileBytes)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		err = profile.ValidateProfile()
+		if err != nil {
+			// add file to unparseable list
+			unparseableNamesList = append(unparseableNamesList, f.Name())
+		} else {
+			// add the filename to parseable
+			parseableNamesList = append(parseableNamesList, f.Name())
+		}
+	}
+	return parseableNamesList, unparseableNamesList
+}
+
+func checkWithPanic(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func writeLen(b []byte, l int) []byte {
+	if 0 > l || l > maxInt32 {
+		panic("writeLen: invalid length")
+	}
+	var lb [4]byte
+	binary.BigEndian.PutUint32(lb[:], uint32(l))
+	return append(b, lb[:]...)
+}
+
+func readLen(b []byte) ([]byte, int) {
+	if len(b) < 4 {
+		panic("readLen: invalid length")
+	}
+	l := binary.BigEndian.Uint32(b)
+	if l > maxInt32 {
+		panic("readLen: invalid length")
+	}
+	return b[4:], int(l)
+}
+func DecodeBytesAsFileNames(b []byte) []string {
+	b, ls := readLen(b)
+	s := make([]string, ls)
+	for i := range s {
+		b, ls = readLen(b)
+		s[i] = string(b[:ls])
+		b = b[ls:]
+	}
+	return s
+}
+
+func EncodeFileNamesAsBytes(s []string) []byte {
+	var b []byte
+	b = writeLen(b, len(s))
+	for _, ss := range s {
+		b = writeLen(b, len(ss))
+		b = append(b, ss...)
+	}
+	return b
 }

@@ -14,7 +14,7 @@ type Reading struct {
 	Unit    string  `json:"unit"`
 	MeterId string  `json:"meter_id,omitempty"`
 	Sender  string  `json:"sender,omitempty"`
-	Suit 	string  `json:"suit,omitempty"`
+	Suit    string  `json:"suit,omitempty"`
 }
 
 // NewReading creates a new Reading object

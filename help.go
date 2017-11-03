@@ -4,6 +4,7 @@ var helpVersion = "v0.1"
 
 var helpMsg = `andy config
 Andy generates profiles for demonstration accounts
+	andy config start								Starts running the app, validate and send readings
 	andy config version								Show andy version
 	andy config profile								Path to demonstration profile file
 	andy config generate   							Generate a new profile configuration with the default name

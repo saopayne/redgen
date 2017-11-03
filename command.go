@@ -16,6 +16,9 @@ var (
 	// andy config init
 	andyConfigInit = andyConfig.Command("init", "Create a default profile.")
 
+	// andy config init
+	andyConfigStart = andyConfig.Command("start", "Start running the application")
+
 	// andy config generate "sample_file.json"
 	andyConfigGenerate    = andyConfig.Command("generate", "Create a default profile.")
 	andyConfigGenerateArg = andyConfigGenerate.Arg("file_to_generate.json", "Create a default profile into the provided file").String()
@@ -33,7 +36,7 @@ var (
 	andyConfigProfileArg = andyConfigProfile.Arg("profile.json", "Validates the given configuration").String()
 
 	//andy config send
-	andyConfigSend   = andyConfig.Command("send", "A readings file should be sent along with this command")
+	andyConfigSend    = andyConfig.Command("send", "A readings file should be sent along with this command")
 	andyConfigSendArg = andyConfigSend.Arg("file_to_send.json", "Send the readings in the file specified to the server").String()
 
 	// andy config show

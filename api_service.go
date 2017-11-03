@@ -1,20 +1,20 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/dghubble/sling"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
-	"encoding/json"
-	"bytes"
-	"log"
 )
 
 const (
-	UUID = "99999999-0000-1111-2222-999999999999"
-	ApiUrl = "https://api.energyanalytics.eu:41115/readings/" + UUID
-	Authorization = "Bearer: eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJqaXQiOiJmYjVhZGI0YjU5ODcwMWI4Iiwic2NwIjoibGEiLCJ2ZXIiOjEsInN1YiI6Ijk5OTk5OTk5LTAwMDAtMTExMS0yMjIyLTk5OTk5OTk5OTk5OSIsImV4cCI6MTUwOTk1MzA0Nn0.95WVy0oM-KqsTwt5TNnE87KtE4jDgPajgFEgbDvrzFWoiow__8T4mdDxetG5vbjwTSl1FPWq-Smea0tvT5dg"
+	UUID              = "99999999-0000-1111-2222-999999999999"
+	ApiUrl            = "https://api.energyanalytics.eu:41115/readings/" + UUID
+	Authorization     = "Bearer: eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJqaXQiOiJmYjVhZGI0YjU5ODcwMWI4Iiwic2NwIjoibGEiLCJ2ZXIiOjEsInN1YiI6Ijk5OTk5OTk5LTAwMDAtMTExMS0yMjIyLTk5OTk5OTk5OTk5OSIsImV4cCI6MTUwOTk1MzA0Nn0.95WVy0oM-KqsTwt5TNnE87KtE4jDgPajgFEgbDvrzFWoiow__8T4mdDxetG5vbjwTSl1FPWq-Smea0tvT5dg"
 	HeaderContentType = "application/vnd.api+json"
 )
 
@@ -24,10 +24,10 @@ var httpClient = &http.Client{
 
 // LibrarianService provides methods for sending readings to the API
 type LibrarianService struct {
-	sling 		*sling.Sling
-	URL 		string
-	Auth		string
-	HttpType	string
+	sling    *sling.Sling
+	URL      string
+	Auth     string
+	HttpType string
 }
 
 // Response is a simplified data the enectiva API sends
@@ -75,8 +75,8 @@ func sendReadingsSchedule(action func(), delay time.Duration) chan bool {
 // If the POST was successful, remove from temp storage and avoid retry
 func (s *LibrarianService) sendReadingsAction(p Profile) (*http.Response, error) {
 	service := &LibrarianService{
-		URL: ApiUrl,
-		Auth: Authorization,
+		URL:      ApiUrl,
+		Auth:     Authorization,
 		HttpType: http.MethodPost,
 	}
 	totalReadings := len(p.Readings)

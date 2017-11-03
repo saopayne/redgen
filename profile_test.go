@@ -3,11 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
 	"testing"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateProfile(t *testing.T) {
