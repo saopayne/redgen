@@ -21,7 +21,7 @@ const DefaultProfile = "DefaultProfile"
 var (
 	defaultProfilePath  = filepath.Join(".", "profiles")
 	defaultReadingsPath = filepath.Join(".", "readings")
-	parseFolderPath     = filepath.Join(".", "parse")
+	parseFolderPath     = filepath.Join(".", "parsers")
 	parseableFileName   = "parseable.txt"
 	unparseableFileName = "unparseable.txt"
 	defaultProfileName  = "default_config.json"
@@ -59,8 +59,8 @@ func Save(p Profile) {
 }
 
 // Save writes the profile JSON into a file, so it can be recovered later
-func SaveReadings(p Profile) {
-	err := WriteReadingsToFile(p, SanitizeName(p.Name)+".json")
+func SaveReadings(p Profile, destinationFolderPath string) {
+	err := WriteReadingsToFile(p, filepath.Join(destinationFolderPath, SanitizeName(p.Name)+".json"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -112,11 +112,12 @@ func (p Profile) StartAt() (time.Time, float64, error) {
 
 	if count != 0 {
 		state = p.Readings[count-1].State
-		date, err = time.Parse("2010-01-02 15:04:05.999999999 MST", p.Readings[count-1].Time)
+		lastWriteTime := p.Readings[count-1].Time
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		date = date.Add(p.Interval * time.Minute)
+		date = lastWriteTime.Add(p.Interval * time.Minute)
+		return date, state, nil
 	} else {
 		if p.Start.Hour() > 23 {
 			return time.Time{}, state, fmt.Errorf("invalid starting hour in configuration file: %d", p.Start.Hour)
@@ -147,13 +148,26 @@ func WriteProfileToFile(profile Profile, profileFile string) error {
 	return nil
 }
 
+// createProfile marshalls a Profile object into a JSON file
+func WriteProfileToReadingsFile(profile Profile, profileFile string) error {
+	jsonBytes, err := json.MarshalIndent(profile, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(profileFile, jsonBytes, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func WriteReadingsToFile(profile Profile, profileFile string) error {
 	jsonBytes, err := json.MarshalIndent(profile, "", "  ")
 	if err != nil {
 		return err
 	}
 	os.MkdirAll(defaultReadingsPath, os.ModePerm)
-	err = ioutil.WriteFile(filepath.Join(defaultProfilePath, profileFile), jsonBytes, 0644)
+	err = ioutil.WriteFile(profileFile, jsonBytes, 0644)
 	if err != nil {
 		return err
 	}
@@ -201,26 +215,25 @@ func GenerateReadings(profile Profile) {
 	)
 
 	date, state, err := profile.StartAt()
+
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
 	for {
 		var (
-			hourBase  = profile.HourlyProfiles[date.Format("15")]
+			hourBase  = profile.HourlyProfiles[date.Format("12")]
 			weekBase  = profile.WeeklyProfiles[date.Format("Mon")]
 			monthBase = profile.MonthlyProfiles[date.Format("Jan")]
 		)
-
-		reading := NewReading(date.String(), profile.Unit, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state)
+		reading := NewReading(date, profile.Unit, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state)
 		profile.Readings = append(profile.Readings, reading)
 
 		PrintJSONReading(reading)
 
 		state = profile.Readings[len(profile.Readings)-1].State
-		SaveReadings(profile)
+		SaveReadings(profile, defaultReadingsPath)
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 		date = date.Add(profile.Interval * time.Minute)
 	}
 }
@@ -246,7 +259,7 @@ func PlotReadingsChart(profile Profile) {
 		readingsLength := len(profile.Readings)
 		timeLabels := make([]string, readingsLength)
 		for i := range timeLabels {
-			timeLabels[i] = profile.Readings[i].Time
+			timeLabels[i] = profile.Readings[i].Time.String()
 		}
 		return timeLabels
 	})()

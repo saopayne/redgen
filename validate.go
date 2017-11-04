@@ -256,7 +256,7 @@ func ValidateReadings(p Profile) error {
 				// the unit is not valid
 				err = fmt.Errorf("the reading %d has an invalid unit %s :)", i+1, p.Readings[i].Unit)
 			}
-			if p.Readings[i].Time == "" {
+			if p.Readings[i].Time.String() == "" {
 				// no time set for the reading
 				err = fmt.Errorf("the reading %d has no time:)", i+1)
 			}

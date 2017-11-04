@@ -9,17 +9,16 @@ import (
 
 // Reading represents a meter reading
 type Reading struct {
-	Time    string  `json:"time"`
-	State   float64 `json:"state"`
-	Unit    string  `json:"unit"`
-	MeterId string  `json:"meter_id,omitempty"`
-	Sender  string  `json:"sender,omitempty"`
-	Suit    string  `json:"suit,omitempty"`
+	Time    time.Time `json:"time"`
+	State   float64   `json:"state"`
+	Unit    string    `json:"unit"`
+	MeterId string    `json:"meter_id,omitempty"`
+	Sender  string    `json:"sender,omitempty"`
+	Suit    string    `json:"suit,omitempty"`
 }
 
 // NewReading creates a new Reading object
-func NewReading(date, unit string, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state float64) Reading {
-
+func NewReading(date time.Time, unit string, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state float64) Reading {
 	baseDailyConsumption = baseDailyConsumption / 24 // 24 hours in a day
 
 	hourLowerBound := baseDailyConsumption - variability
@@ -32,7 +31,6 @@ func NewReading(date, unit string, baseDailyConsumption, hourBase, weekBase, mon
 	if rawReading < 0 {
 		rawReading = 0
 	}
-
 	return Reading{
 		Time:  date,
 		State: state + rawReading,

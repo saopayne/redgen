@@ -121,7 +121,6 @@ func ParseCLICommands() (string, error) {
 
 func CmdProfileAction(filename string) {
 	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
-	fmt.Println("reading json file")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -242,9 +241,74 @@ func CmdSendReadingsToServer(filename string) {
 // check if profile name exists in both files, if not, validate the file and
 // append to parseable | unparseable list
 func InitGenerator() {
-	parseableFileNamesList, unparseableFileNamesList := GetAppendedParsedFileNames()
-	fmt.Println(parseableFileNamesList)
-	fmt.Println(unparseableFileNamesList)
+	parseableFileNamesList, _ := GetAppendedParsedFileNames()
+
+	// check if a file with the last reading exists, if not create and leave empty
+	// generate readings at the specified interval in the config and add to the /readings/filename_readings.json file
+	// when you stop the app, and start again, it should get the last reading, compare the time interval of the last reading with current time
+	// account for the time lost by updating the state with an estimated value for the time it was offline but it should continue appending
+	// reading from now (just add the state from say State: 10 -> 12 -> [...offline for three missed readings] -> 20 [14->16->18 skipped] but state added
+	for _, filename := range parseableFileNamesList {
+		// for each valid config, create a readings file in the readings dir if file is empty
+		profile, readingsFileExists := IsReadingFileExist(filename)
+		if !readingsFileExists {
+			fmt.Println("Readings file doesn't exist, an empty one has been created")
+		} else {
+			fmt.Println("An existing readings file exists")
+		}
+		// have some delay to ensure creation of directories
+		// could probably pipe the result to know when it's done (more efficient)
+		time.Sleep(10 * time.Second)
+		// the reading files have been created, store readings at this point
+		// for each reading file, when
+		go SendReadingsOnStart(profile)
+	}
+}
+
+func SendReadingsOnStart(p Profile) {
+	for {
+		GenerateReadings(p)
+		<-time.After(5 * time.Second)
+	}
+}
+
+func IsReadingFileExist(filename string) (Profile, bool) {
+	// create readings directory if it doesn't currently exist
+	if _, err := os.Stat(defaultReadingsPath); os.IsNotExist(err) {
+		os.Mkdir(defaultReadingsPath, os.ModePerm)
+	}
+	// create a latest readings file if it doesn't exist and leave empty
+	// in the empty file, write the profile config since readings will be appended to it
+	readingsFile := filepath.Join(defaultReadingsPath, filename)
+	if _, err := os.Stat(readingsFile); os.IsNotExist(err) {
+		_, err = os.Create(readingsFile)
+		// marshall the config into a Profile and unmarshall back into json
+		fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		profile, err := NewProfileFromJson(fileBytes)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		err = profile.ValidateProfile()
+		// write into the new file
+		_ = WriteProfileToReadingsFile(profile, readingsFile)
+		return profile, false
+	}
+	// marshall the config into a Profile and unmarshall back into json
+	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	profile, err := NewProfileFromJson(fileBytes)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	err = profile.ValidateProfile()
+	// write into the new file
+	_ = WriteProfileToReadingsFile(profile, readingsFile)
+	return profile, true
 }
 
 // GetAppendedParsedFileNames gets the 2 slices each containing valid and invalid names of files
@@ -254,7 +318,6 @@ func GetAppendedParsedFileNames() (validFileNames []string, invalidFileNames []s
 	parseableNamesList, unparseableNamesList := SplitParseableConfigFiles()
 	os.MkdirAll(parseFolderPath, os.ModePerm)
 	if _, err := os.Stat(parseableFileFullPath); os.IsNotExist(err) {
-		// does not exist
 		_, err = os.Create(parseableFileFullPath)
 	}
 	parseableNamesBytes := EncodeFileNamesAsBytes(parseableNamesList)
@@ -262,7 +325,6 @@ func GetAppendedParsedFileNames() (validFileNames []string, invalidFileNames []s
 	checkWithPanic(err)
 
 	if _, err := os.Stat(unparseableFileFullPath); os.IsNotExist(err) {
-		// does not exist
 		_, err = os.Create(unparseableFileFullPath)
 	}
 	unparseableNamesBytes := EncodeFileNamesAsBytes(unparseableNamesList)
