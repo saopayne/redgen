@@ -18,16 +18,16 @@ type Reading struct {
 }
 
 // NewReading creates a new Reading object
-func NewReading(date time.Time, unit string, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state float64) Reading {
-	baseDailyConsumption = baseDailyConsumption / 24 // 24 hours in a day
-
-	hourLowerBound := baseDailyConsumption - variability
-	hourUpperBound := baseDailyConsumption + variability
-	currentHour := RandomHourValue(hourLowerBound, hourUpperBound)
+func NewReading(date time.Time, unit string, interval, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state float64) Reading {
+	baseDailyConsumptionDiv := baseDailyConsumption / 24 // 24 hours in a day
+	hourLowerBound := float64(baseDailyConsumptionDiv - (variability/10))
+	hourUpperBound := float64(baseDailyConsumptionDiv + (variability/10))
+	currentHour := float64(RandomHourValue(hourLowerBound, hourUpperBound))
+	// interval is in minutes and should be factored in by (60mins/interval)
+	hourBasedInterval := float64(60 / interval)
 	//the current hour will be multiplied by all the profiles
 	//e.g 1.5 for Jan, 1 for Sat and 1 for 12:00 hours with currentHour 8 should produce 12
-	rawReading := currentHour * hourBase * weekBase * monthBase
-
+	rawReading := float64(currentHour * hourBase * weekBase * monthBase)/hourBasedInterval
 	if rawReading < 0 {
 		rawReading = 0
 	}
@@ -48,8 +48,8 @@ func RandomHourValue(lo float64, hi float64) float64 {
 	// to allow the the values to be represented
 	// multiply the numbers by 100, get a random value and divide the value by 100 to get desired value
 	rand.Seed(time.Now().UnixNano())
-	lowerBound := int(lo * 100)
-	upperBound := int(hi * 100)
+	lowerBound := int(lo * 10000000)
+	upperBound := int(hi * 10000000)
 	randomNumber := rand.Intn(upperBound-lowerBound) + lowerBound
-	return float64(randomNumber / 100)
+	return float64(randomNumber / 10000000)
 }

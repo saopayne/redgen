@@ -189,11 +189,8 @@ func CmdValidateSingleFile(filename string) {
 	err = profile.ValidateProfile()
 	if err != nil {
 		fmt.Println("The profile is not a valid profile")
-		log.Fatal(err)
 	}
-	fmt.Println("####################################################")
 	fmt.Println("------The profile configuration is valid------------")
-	fmt.Println("####################################################")
 }
 
 func CmdValidateAction(filename string, singleFile bool) {
@@ -221,56 +218,56 @@ func CmdSendReadingsToServer(filename string) {
 	}
 	err = profile.ValidateProfile()
 	if err != nil {
-		fmt.Println("The profile is not a valid profile")
-		log.Fatal(err)
+		log.Println("The profile is not valid", profile)
 	}
 	librarianService := new(LibrarianService)
 	// send the readings to the api at this point
 	resp, err := librarianService.sendReadingsAction(profile)
 	fmt.Println("SendReadingsAction() httpResp", resp)
 
-	ping := func() { fmt.Println("#") }
-	stop := sendReadingsSchedule(ping, 5*time.Millisecond)
-	time.Sleep(25 * time.Millisecond)
-	stop <- true
-	time.Sleep(25 * time.Millisecond)
 }
 
-// check all configurations and log the unparseable ones
-// maintain two list of parseable and unparseable (with names)
-// check if profile name exists in both files, if not, validate the file and
-// append to parseable | unparseable list
+// InitGenerator starts the application and calls the function which runs
+// every 5 seconds for now (should be 15 mins ideally)
 func InitGenerator() {
-	parseableFileNamesList, _ := GetAppendedParsedFileNames()
-
-	// check if a file with the last reading exists, if not create and leave empty
-	// generate readings at the specified interval in the config and add to the /readings/filename_readings.json file
-	// when you stop the app, and start again, it should get the last reading, compare the time interval of the last reading with current time
-	// account for the time lost by updating the state with an estimated value for the time it was offline but it should continue appending
-	// reading from now (just add the state from say State: 10 -> 12 -> [...offline for three missed readings] -> 20 [14->16->18 skipped] but state added
-	for _, filename := range parseableFileNamesList {
-		// for each valid config, create a readings file in the readings dir if file is empty
-		profile, readingsFileExists := IsReadingFileExist(filename)
-		if !readingsFileExists {
-			fmt.Println("Readings file doesn't exist, an empty one has been created")
-		} else {
-			fmt.Println("An existing readings file exists")
-		}
-		// have some delay to ensure creation of directories
-		// could probably pipe the result to know when it's done (more efficient)
-		time.Sleep(10 * time.Second)
-		// the reading files have been created, store readings at this point
-		// for each reading file, when
-		go SendReadingsOnStart(profile)
-	}
-}
-
-func SendReadingsOnStart(p Profile) {
+	// generate readings and send every interval specified below
+	t := time.NewTicker(time.Second * 5)
 	for {
-		GenerateReadings(p)
-		<-time.After(5 * time.Second)
+		SendReadingsOnStart()
+		<-t.C
 	}
 }
+
+// SendReadingsOnStart sends the result to the API for each reading in the file,
+func SendReadingsOnStart() {
+		parseableFileNamesList, _ := GetAppendedParsedFileNames()
+		// check if a file with the last reading exists, if not create and leave empty
+		// generate readings at the specified interval in the config and add to the /readings/filename_readings.json file
+		// when you stop the app, and start again, it should get the last reading, compare the time interval of the last reading with current time
+		// account for the time lost by updating the state with an estimated value for the time it was offline but it should continue appending
+		// reading from now (just add the state from say State: 10 -> 12 -> [...offline for three missed readings] -> 20 [14->16->18 skipped] but state added
+		for _, filename := range parseableFileNamesList {
+			// for each valid config, create a readings file in the readings dir if file is empty
+			profile, _ := IsReadingFileExist(filename)
+			profile = GenerateSingleReading(profile)
+			// send reading to the API, if successful, update the file
+			librarianService := new(LibrarianService)
+			// send the readings to the api at this point
+			resp, err := librarianService.sendReadingsAction(profile)
+			if err == nil {
+				// if the request was successful, save the readings to a file
+				if resp.StatusCode == 200 || resp.StatusCode == 201 {
+					SaveReadings(profile, defaultReadingsPath)
+				} else {
+					log.Println("Sent reading responded with a status other than 200 OK success", resp.StatusCode)
+				}
+			} else {
+				log.Println("Encountered an error while sending reading to the API", err)
+			}
+			time.Sleep(time.Second * 1)
+		}
+}
+
 
 func IsReadingFileExist(filename string) (Profile, bool) {
 	// create readings directory if it doesn't currently exist
@@ -295,20 +292,19 @@ func IsReadingFileExist(filename string) (Profile, bool) {
 		// write into the new file
 		_ = WriteProfileToReadingsFile(profile, readingsFile)
 		return profile, false
+	} else {
+		// marshall the config into a Profile and unmarshall back into json
+		fileBytes, err := ioutil.ReadFile(filepath.Join(defaultReadingsPath, filename))
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		profile, err := NewProfileFromJson(fileBytes)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		err = profile.ValidateProfile()
+		return profile, true
 	}
-	// marshall the config into a Profile and unmarshall back into json
-	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	profile, err := NewProfileFromJson(fileBytes)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	err = profile.ValidateProfile()
-	// write into the new file
-	_ = WriteProfileToReadingsFile(profile, readingsFile)
-	return profile, true
 }
 
 // GetAppendedParsedFileNames gets the 2 slices each containing valid and invalid names of files

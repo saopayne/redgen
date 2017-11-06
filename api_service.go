@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/dghubble/sling"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
@@ -81,33 +80,28 @@ func (s *LibrarianService) sendReadingsAction(p Profile) (*http.Response, error)
 	}
 	totalReadings := len(p.Readings)
 
-	for i := 0; i < totalReadings; i++ {
-		eachReading := p.Readings[i]
-		eachReading.MeterId = "test"
-		eachReading.Sender = "ademola"
-		postData := map[string]Reading{"data": eachReading}
-		jsonReading, err := json.Marshal(postData)
-		fmt.Println(jsonReading)
-		req, err := service.BuildHTTPRequest(jsonReading)
-		if err != nil {
-			return nil, err
-		}
-
-		resp, err := SendHTTPRequest(httpClient, req)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println("response Status:", resp.Status)
-		body, err := ioutil.ReadAll(resp.Body)
-		defer resp.Body.Close()
-
-		if err != nil {
-			log.Fatal(err)
-		}
+	eachReading := p.Readings[totalReadings-1]
+	eachReading.MeterId = "test"
+	eachReading.Sender = "ademola"
+	postData := map[string]Reading{"data": eachReading}
+	jsonReading, err := json.Marshal(postData)
+	req, err := service.BuildHTTPRequest(jsonReading)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := SendHTTPRequest(httpClient, req)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("response Status:", resp.Status)
+	body, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
 		fmt.Println("response Body:", string(body))
 		return resp, err
 	}
-	return nil, nil
+
+	return resp, nil
 }
 
 //BuildHTTPRequest builds a request (Sets Body and Header)

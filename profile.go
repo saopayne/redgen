@@ -36,7 +36,7 @@ type Profile struct {
 	MonthlyProfiles      map[string]float64 `json:"monthlyProfiles"`
 	Variability          float64            `json:"variability"`
 	Unit                 string             `json:"unit"`
-	Interval             time.Duration      `json:"interval"`
+	Interval             float64      		`json:"interval"`
 	Start                time.Time          `json:"startAt"`
 	Readings             []Reading          `json:"readings"`
 }
@@ -116,18 +116,10 @@ func (p Profile) StartAt() (time.Time, float64, error) {
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		date = lastWriteTime.Add(p.Interval * time.Minute)
-		return date, state, nil
+		lastWriteTime = lastWriteTime.Add(time.Minute * time.Duration(p.Interval))
+		return lastWriteTime, state, nil
 	} else {
-		if p.Start.Hour() > 23 {
-			return time.Time{}, state, fmt.Errorf("invalid starting hour in configuration file: %d", p.Start.Hour)
-		}
-		p.Start.Month()
-		month, ok := months[p.Start.Month().String()[:3]]
-		if ok {
-			return time.Date(p.Start.Year(), month, p.Start.Day(), p.Start.Hour(), 0, 0, 0, time.UTC), state, nil
-		}
-		return time.Time{}, state, fmt.Errorf("invalid starting month in configuration file: %s", p.Start.Month)
+		return p.Start, state, nil
 	}
 
 	return date, state, nil
@@ -166,7 +158,9 @@ func WriteReadingsToFile(profile Profile, profileFile string) error {
 	if err != nil {
 		return err
 	}
-	os.MkdirAll(defaultReadingsPath, os.ModePerm)
+	if _, err := os.Stat(defaultReadingsPath); os.IsNotExist(err) {
+		os.MkdirAll(defaultReadingsPath, os.ModePerm)
+	}
 	err = ioutil.WriteFile(profileFile, jsonBytes, 0644)
 	if err != nil {
 		return err
@@ -202,7 +196,8 @@ func CreateDefaultProfile(name string) Profile {
 		Variability:          5,
 		Interval:             15,
 		Unit:                 "kW",
-		Start:                time.Date(2017, 1, 1, 1, 0, 0, 0, time.UTC),
+		Start:                time.Date(
+			2017, 01, 01, 00, 00, 00, 00, time.UTC),
 		Readings:             make([]Reading, 0),
 	}
 }
@@ -225,7 +220,7 @@ func GenerateReadings(profile Profile) {
 			weekBase  = profile.WeeklyProfiles[date.Format("Mon")]
 			monthBase = profile.MonthlyProfiles[date.Format("Jan")]
 		)
-		reading := NewReading(date, profile.Unit, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state)
+		reading := NewReading(date, profile.Unit, profile.Interval, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state)
 		profile.Readings = append(profile.Readings, reading)
 
 		PrintJSONReading(reading)
@@ -234,8 +229,34 @@ func GenerateReadings(profile Profile) {
 		SaveReadings(profile, defaultReadingsPath)
 
 		time.Sleep(2 * time.Second)
-		date = date.Add(profile.Interval * time.Minute)
+		date = date.Add(time.Duration(profile.Interval) * time.Minute)
 	}
+}
+
+// startDemonstration generate a reading based on the configured interval
+func GenerateSingleReading(profile Profile) (Profile) {
+	var (
+		baseDailyConsumption = profile.BaseDailyConsumption
+		variability          = profile.Variability
+	)
+
+	date, state, err := profile.StartAt()
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	var (
+		hourBase  = profile.HourlyProfiles[date.Format("12")]
+		weekBase  = profile.WeeklyProfiles[date.Format("Mon")]
+		monthBase = profile.MonthlyProfiles[date.Format("Jan")]
+	)
+	if len(profile.Readings) > 0 {
+		state = profile.Readings[len(profile.Readings)-1].State
+	}
+	reading := NewReading(date, profile.Unit, profile.Interval, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state)
+	profile.Readings = append(profile.Readings, reading)
+	return profile
 }
 
 // plotReadingsChart displays the readings generated for a configuration with ASCII art
