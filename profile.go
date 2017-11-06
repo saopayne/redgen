@@ -36,7 +36,7 @@ type Profile struct {
 	MonthlyProfiles      map[string]float64 `json:"monthlyProfiles"`
 	Variability          float64            `json:"variability"`
 	Unit                 string             `json:"unit"`
-	Interval             float64      		`json:"interval"`
+	Interval             float64            `json:"interval"`
 	Start                time.Time          `json:"startAt"`
 	Readings             []Reading          `json:"readings"`
 }
@@ -196,9 +196,9 @@ func CreateDefaultProfile(name string) Profile {
 		Variability:          5,
 		Interval:             15,
 		Unit:                 "kW",
-		Start:                time.Date(
+		Start: time.Date(
 			2017, 01, 01, 00, 00, 00, 00, time.UTC),
-		Readings:             make([]Reading, 0),
+		Readings: make([]Reading, 0),
 	}
 }
 
@@ -234,7 +234,7 @@ func GenerateReadings(profile Profile) {
 }
 
 // startDemonstration generate a reading based on the configured interval
-func GenerateSingleReading(profile Profile) (Profile) {
+func GenerateSingleReading(profile Profile) Profile {
 	var (
 		baseDailyConsumption = profile.BaseDailyConsumption
 		variability          = profile.Variability

@@ -20,14 +20,14 @@ type Reading struct {
 // NewReading creates a new Reading object
 func NewReading(date time.Time, unit string, interval, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state float64) Reading {
 	baseDailyConsumptionDiv := baseDailyConsumption / 24 // 24 hours in a day
-	hourLowerBound := float64(baseDailyConsumptionDiv - (variability/10))
-	hourUpperBound := float64(baseDailyConsumptionDiv + (variability/10))
+	hourLowerBound := float64(baseDailyConsumptionDiv - (variability / 10))
+	hourUpperBound := float64(baseDailyConsumptionDiv + (variability / 10))
 	currentHour := float64(RandomHourValue(hourLowerBound, hourUpperBound))
 	// interval is in minutes and should be factored in by (60mins/interval)
 	hourBasedInterval := float64(60 / interval)
 	//the current hour will be multiplied by all the profiles
 	//e.g 1.5 for Jan, 1 for Sat and 1 for 12:00 hours with currentHour 8 should produce 12
-	rawReading := float64(currentHour * hourBase * weekBase * monthBase)/hourBasedInterval
+	rawReading := float64(currentHour*hourBase*weekBase*monthBase) / hourBasedInterval
 	if rawReading < 0 {
 		rawReading = 0
 	}

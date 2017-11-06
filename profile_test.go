@@ -30,7 +30,6 @@ func TestCreateProfile(t *testing.T) {
 	}
 }
 
-
 func TestSanitizeName(t *testing.T) {
 	sampleName := " Sample Name "
 	expectedResult := "sample_name"

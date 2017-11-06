@@ -240,34 +240,33 @@ func InitGenerator() {
 
 // SendReadingsOnStart sends the result to the API for each reading in the file,
 func SendReadingsOnStart() {
-		parseableFileNamesList, _ := GetAppendedParsedFileNames()
-		// check if a file with the last reading exists, if not create and leave empty
-		// generate readings at the specified interval in the config and add to the /readings/filename_readings.json file
-		// when you stop the app, and start again, it should get the last reading, compare the time interval of the last reading with current time
-		// account for the time lost by updating the state with an estimated value for the time it was offline but it should continue appending
-		// reading from now (just add the state from say State: 10 -> 12 -> [...offline for three missed readings] -> 20 [14->16->18 skipped] but state added
-		for _, filename := range parseableFileNamesList {
-			// for each valid config, create a readings file in the readings dir if file is empty
-			profile, _ := IsReadingFileExist(filename)
-			profile = GenerateSingleReading(profile)
-			// send reading to the API, if successful, update the file
-			librarianService := new(LibrarianService)
-			// send the readings to the api at this point
-			resp, err := librarianService.sendReadingsAction(profile)
-			if err == nil {
-				// if the request was successful, save the readings to a file
-				if resp.StatusCode == 200 || resp.StatusCode == 201 {
-					SaveReadings(profile, defaultReadingsPath)
-				} else {
-					log.Println("Sent reading responded with a status other than 200 OK success", resp.StatusCode)
-				}
+	parseableFileNamesList, _ := GetAppendedParsedFileNames()
+	// check if a file with the last reading exists, if not create and leave empty
+	// generate readings at the specified interval in the config and add to the /readings/filename_readings.json file
+	// when you stop the app, and start again, it should get the last reading, compare the time interval of the last reading with current time
+	// account for the time lost by updating the state with an estimated value for the time it was offline but it should continue appending
+	// reading from now (just add the state from say State: 10 -> 12 -> [...offline for three missed readings] -> 20 [14->16->18 skipped] but state added
+	for _, filename := range parseableFileNamesList {
+		// for each valid config, create a readings file in the readings dir if file is empty
+		profile, _ := IsReadingFileExist(filename)
+		profile = GenerateSingleReading(profile)
+		// send reading to the API, if successful, update the file
+		librarianService := new(LibrarianService)
+		// send the readings to the api at this point
+		resp, err := librarianService.sendReadingsAction(profile)
+		if err == nil {
+			// if the request was successful, save the readings to a file
+			if resp.StatusCode == 200 || resp.StatusCode == 201 {
+				SaveReadings(profile, defaultReadingsPath)
 			} else {
-				log.Println("Encountered an error while sending reading to the API", err)
+				log.Println("Sent reading responded with a status other than 200 OK success", resp.StatusCode)
 			}
-			time.Sleep(time.Second * 1)
+		} else {
+			log.Println("Encountered an error while sending reading to the API", err)
 		}
+		time.Sleep(time.Second * 1)
+	}
 }
-
 
 func IsReadingFileExist(filename string) (Profile, bool) {
 	// create readings directory if it doesn't currently exist
