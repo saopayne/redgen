@@ -1,23 +1,23 @@
 package main
 
 import (
-	"strings"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestParseCLI(t *testing.T) {
-	for _, tc := range [][]string{
-		{"andy"},
-		{"andy", "config", "-version"},
-		{"andy", "config", "init"},
-		{"andy", "config", "generate"},
-		{"andy", "config", "validate"},
-	} {
-		name := strings.Join(tc, " ")
-		t.Run(name, func(t *testing.T) {
-			if _, err := ParseCLICommands(); err != nil {
-				t.Error(err)
-			}
-		})
-	}
+func TestCmdInit(t *testing.T) {
+	result, err := CmdInit()
+	expected := "Default profile file created into ./profiles"
+	assert.EqualValues(t, expected, result)
+	assert.EqualValues(t, err, nil)
+}
+
+func TestCmdGenerate(t *testing.T) {
+	actualResult, err := CmdGenerate("")
+	assert.Equal(t, helpMsg, actualResult, "They should be equal")
+	assert.EqualValues(t, nil, err)
+	actualResult, err = CmdGenerate("file")
+	expectedResult := "file file created into ./profiles"
+	assert.EqualValues(t, expectedResult, actualResult, "They should be equal")
+	assert.EqualValues(t, nil, err)
 }

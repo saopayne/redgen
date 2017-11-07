@@ -3,29 +3,25 @@ package main
 import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"testing"
 )
 
 func TestProfileIsEqual(t *testing.T) {
 	expectedProfile := CreateDefaultProfile("")
 
-	profileBytes := bytes.NewBufferString("{\"name\":\"DefaultProfile\",\"baseDailyConsumption\":18," +
-		"\"hourlyProfiles\":{\"00\":1,\"01\":1,\"02\":1,\"03\":1,\"04\":1,\"05\":1,\"06\":1,\"07\":1,\"08\":1," +
-		"\"09\":1,\"10\":1,\"11\":1,\"12\":1,\"13\":1,\"14\":1,\"15\":1,\"16\":1,\"17\":1,\"18\":1,\"19\":1,\"20\":1," +
-		"\"21\":1,\"22\":1,\"23\":1},\"WeeklyProfiles\":{\"Fri\":1,\"Mon\":1,\"Sat\":1,\"Sun\":1,\"Thu\":1,\"Tue\":1," +
-		"\"Wed\":1},\"monthlyProfiles\":{\"Apr\":1,\"Aug\":1,\"Dec\":1,\"Feb\":1,\"Jan\":1,\"Jul\":1,\"Jun\":1,\"Mar\":1," +
-		"\"May\":1,\"Nov\":1,\"Oct\":1,\"Sep\":1},\"variability\":5,\"unit\":\"kW\",\"interval\":15,\"startAt\":" +
-		"{\"year\":2017,\"month\":\"Jan\",\"day\":1,\"hour\":6}, \"readings\":[]}")
+	profileBytes := bytes.NewBufferString("{\"name\":\"DefaultProfile\",\"baseDailyConsumption\":18,\"hourlyProfiles\":" +
+		"{\"0\":1,\"1\":1,\"2\":1,\"3\":1,\"4\":1,\"5\":1,\"6\":1,\"7\":1,\"8\":1,\"9\":1,\"10\":1,\"11\":1,\"12\":1," +
+		"\"13\":1,\"14\":1,\"15\":1,\"16\":1,\"17\":1,\"18\":1,\"19\":1,\"20\":1,\"21\":1,\"22\":1,\"23\":1},\"WeeklyProfiles\":" +
+		"{\"Fri\":1,\"Mon\":1,\"Sat\":1,\"Sun\":1,\"Thu\":1,\"Tue\":1,\"Wed\":1},\"monthlyProfiles\":{\"Apr\":1,\"Aug\":1,\"Dec\":1," +
+		"\"Feb\":1,\"Jan\":1,\"Jul\":1,\"Jun\":1,\"Mar\":1,\"May\":1,\"Nov\":1,\"Oct\":1,\"Sep\":1},\"variability\":5,\"unit\":\"kW\"," +
+		"\"interval\":15,\"startAt\":\"2017-01-01T00:00:00Z\", \"readings\":[]}")
 
 	profile, err := NewProfileFromJson(profileBytes.Bytes())
 	if err != nil {
 		t.Error(err.Error())
 	}
 
-	if !reflect.DeepEqual(expectedProfile, profile) {
-		t.Errorf("Expected:\n %+v,\n\ngot:\n %+v", expectedProfile, profile)
-	}
+	assert.Equal(t, expectedProfile, profile)
 }
 
 func TestIsUnitValid(t *testing.T) {
@@ -56,34 +52,33 @@ func TestIsValueInList(t *testing.T) {
 
 func TestValidateProfile(t *testing.T) {
 	profileBytesValid := bytes.NewBufferString("{\"name\":\"DefaultProfile\",\"baseDailyConsumption\":100," +
-		"\"hourlyProfiles\":{\"00\":1,\"01\":1,\"02\":1,\"03\":1,\"04\":1,\"05\":1,\"06\":1,\"07\":1,\"08\":1,\"09\":1," +
+		"\"hourlyProfiles\":{\"0\":1,\"1\":1,\"2\":1,\"3\":1,\"4\":1,\"5\":1,\"6\":1,\"7\":1,\"8\":1,\"9\":1," +
 		"\"10\":1,\"11\":1,\"12\":1,\"13\":1,\"14\":1,\"15\":1,\"16\":1,\"17\":1,\"18\":1,\"19\":1,\"20\":1,\"21\":1," +
 		"\"22\":1,\"23\":1},\"WeeklyProfiles\":{\"Fri\":1,\"Mon\":1,\"Sat\":1,\"Sun\":1,\"Thu\":1,\"Tue\":1,\"Wed\":1}," +
 		"\"monthlyProfiles\":{\"Apr\":1,\"Aug\":1,\"Dec\":1,\"Feb\":1,\"Jan\":1,\"Jul\":1,\"Jun\":1,\"Mar\":1,\"May\":1," +
-		"\"Nov\":1,\"Oct\":1,\"Sep\":1},\"variability\":5,\"unit\":\"kW\",\"interval\":15,\"startAt\":{\"year\":2000, " +
-		"\"month\":\"Jan\",\"hour\":6}, \"readings\":[]}")
+		"\"Nov\":1,\"Oct\":1,\"Sep\":1},\"variability\":5,\"unit\":\"kW\",\"interval\":15,\"startAt\":\"2017-01-01T00:00:00Z\"," +
+		"\"readings\":[]}")
 	profile, err := NewProfileFromJson(profileBytesValid.Bytes())
 	if err != nil {
 		t.Error(err.Error())
 	}
-	err = profile.ValidateProfile()
+	err = profile.Validate()
 	assert.Empty(t, err)
 }
 
 func TestValidateName(t *testing.T) {
 	profileBytesWithInvalidName := bytes.NewBufferString("{\"name\":\"De\",\"baseDailyConsumption\":100,\"hourlyProfiles\":" +
-		"{\"00\":1,\"01\":1,\"02\":1,\"03\":1,\"04\":1,\"05\":1,\"06\":1,\"07\":1,\"08\":1,\"09\":1,\"10\":1,\"11\":1,\"12\":1," +
+		"{\"0\":1,\"1\":1,\"2\":1,\"3\":1,\"4\":1,\"5\":1,\"6\":1,\"7\":1,\"8\":1,\"9\":1,\"10\":1,\"11\":1,\"12\":1," +
 		"\"13\":1,\"14\":1,\"15\":1,\"16\":1,\"17\":1,\"18\":1,\"19\":1,\"20\":1,\"21\":1,\"22\":1,\"23\":1},\"WeeklyProfiles\":" +
 		"{\"Fri\":1,\"Mon\":1,\"Sat\":1,\"Sun\":1,\"Thu\":1,\"Tue\":1,\"Wed\":1},\"monthlyProfiles\":{\"Apr\":1,\"Aug\":1,\"Dec\":1," +
 		"\"Feb\":1,\"Jan\":1,\"Jul\":1,\"Jun\":1,\"Mar\":1,\"May\":1,\"Nov\":1,\"Oct\":1,\"Sep\":1},\"variability\":5,\"unit\":\"kW\"," +
-		"\"interval\":15,\"startAt\":{\"year\":2000, \"month\":\"Jan\",\"hour\":6}, \"readings\":[]}")
+		"\"interval\":15,\"startAt\":\"2017-01-01T00:00:00Z\", \"readings\":[]}")
 	profileBytesWithValidName := bytes.NewBufferString("{\"name\":\"Default\",\"baseDailyConsumption\":100,\"hourlyProfiles\":" +
-		"{\"00\":-1,\"01\":1,\"02\":1,\"03\":1,\"04\":1,\"05\":1,\"06\":1,\"07\":1,\"08\":1,\"09\":1,\"10\":1,\"11\":1,\"12\":1," +
+		"{\"00\":-1,\"01\":1,\"2\":1,\"3\":1,\"4\":1,\"5\":1,\"6\":1,\"7\":1,\"8\":1,\"9\":1,\"10\":1,\"11\":1,\"12\":1," +
 		"\"13\":1,\"14\":1,\"15\":1,\"16\":1,\"17\":1,\"18\":1,\"19\":1,\"20\":1,\"21\":1,\"22\":1,\"23\":1},\"WeeklyProfiles\"" +
 		":{\"Fri\":1,\"Mon\":1,\"Sat\":1,\"Sun\":1,\"Thu\":1,\"Tue\":1,\"Wed\":1},\"monthlyProfiles\":{\"Apr\":1,\"Aug\":1,\"Dec\":" +
 		"1,\"Feb\":1,\"Jan\":1,\"Jul\":1,\"Jun\":1,\"Mar\":1,\"May\":1,\"Nov\":1,\"Oct\":1,\"Sep\":1},\"variability\":5,\"unit\":" +
-		"\"kW\",\"interval\":15,\"startAt\":{\"year\":2000, \"month\":\"Jan\",\"hour\":6}, \"readings\":[]}")
-	// invalid name
+		"\"kW\",\"interval\":15,\"startAt\":\"2017-01-01T00:00:00Z\", \"readings\":[]}")
 	profile, err := NewProfileFromJson(profileBytesWithInvalidName.Bytes())
 	if err != nil {
 		t.Error(err.Error())
@@ -102,20 +97,18 @@ func TestValidateName(t *testing.T) {
 }
 
 func TestValidateHourlyProfiles(t *testing.T) {
-	profileBytesWithInvalidHour := bytes.NewBufferString("{\"name\":\"Default\",\"baseDailyConsumption\":100," +
-		"\"hourlyProfiles\":{\"00\":-1,\"01\":1,\"02\":1,\"03\":1,\"04\":1,\"05\":1,\"06\":1,\"07\":1,\"08\":1,\"09\"" +
-		":1,\"10\":1,\"11\":1,\"12\":1,\"13\":1,\"14\":1,\"15\":1,\"16\":1,\"17\":1,\"18\":1,\"19\":1,\"20\":1,\"21\":1," +
-		"\"22\":1,\"23\":1},\"WeeklyProfiles\":{\"Fri\":1,\"Mon\":1,\"Sat\":1,\"Sun\":1,\"Thu\":1,\"Tue\":1,\"Wed\":1}," +
-		"\"monthlyProfiles\":{\"Apr\":1,\"Aug\":1,\"Dec\":1,\"Feb\":1,\"Jan\":1,\"Jul\":1,\"Jun\":1,\"Mar\":1,\"May\":1," +
-		"\"Nov\":1,\"Oct\":1,\"Sep\":1},\"variability\":5,\"unit\":\"kW\",\"interval\":15,\"startAt\":{\"year\":2000, " +
-		"\"month\":\"Jan\",\"hour\":6}, \"readings\":[]}")
-	profileBytesWithValidHour := bytes.NewBufferString("{\"name\":\"Default\",\"baseDailyConsumption\":100," +
-		"\"hourlyProfiles\":{\"00\":2,\"01\":1,\"02\":1,\"03\":1,\"04\":1,\"05\":1,\"06\":1,\"07\":1,\"08\":1," +
-		"\"09\":1,\"10\":1,\"11\":1,\"12\":1,\"13\":1,\"14\":1,\"15\":1,\"16\":1,\"17\":1,\"18\":1,\"19\":1,\"20\":1," +
-		"\"21\":1,\"22\":1,\"23\":1},\"WeeklyProfiles\":{\"Fri\":1,\"Mon\":1,\"Sat\":1,\"Sun\":1,\"Thu\":1,\"Tue\":1," +
-		"\"Wed\":1},\"monthlyProfiles\":{\"Apr\":1,\"Aug\":1,\"Dec\":1,\"Feb\":1,\"Jan\":1,\"Jul\":1,\"Jun\":1,\"Mar\":1," +
-		"\"May\":1,\"Nov\":1,\"Oct\":1,\"Sep\":1},\"variability\":5,\"unit\":\"kW\",\"interval\":15,\"startAt\":{\"year\":2000," +
-		" \"month\":\"Jan\",\"hour\":6}, \"readings\":[]}")
+	profileBytesWithInvalidHour := bytes.NewBufferString("{\"name\":\"Default\",\"baseDailyConsumption\":100,\"hourlyProfiles\":" +
+		"{\"0\":-1,\"1\":1,\"2\":1,\"3\":1,\"4\":1,\"5\":1,\"6\":1,\"7\":1,\"8\":1,\"9\":1,\"10\":1,\"11\":1,\"12\":1," +
+		"\"13\":1,\"14\":1,\"15\":1,\"16\":1,\"17\":1,\"18\":1,\"19\":1,\"20\":1,\"21\":1,\"22\":1,\"23\":1},\"WeeklyProfiles\"" +
+		":{\"Fri\":1,\"Mon\":1,\"Sat\":1,\"Sun\":1,\"Thu\":1,\"Tue\":1,\"Wed\":1},\"monthlyProfiles\":{\"Apr\":1,\"Aug\":1,\"Dec\":" +
+		"1,\"Feb\":1,\"Jan\":1,\"Jul\":1,\"Jun\":1,\"Mar\":1,\"May\":1,\"Nov\":1,\"Oct\":1,\"Sep\":1},\"variability\":5,\"unit\":" +
+		"\"kW\",\"interval\":15,\"startAt\":\"2017-01-01T00:00:00Z\", \"readings\":[]}")
+	profileBytesWithValidHour := bytes.NewBufferString("{\"name\":\"Default\",\"baseDailyConsumption\":100,\"hourlyProfiles\":" +
+		"{\"0\":1,\"1\":1,\"2\":1,\"3\":1,\"4\":1,\"5\":1,\"6\":1,\"7\":1,\"8\":1,\"9\":1,\"10\":1,\"11\":1,\"12\":1," +
+		"\"13\":1,\"14\":1,\"15\":1,\"16\":1,\"17\":1,\"18\":1,\"19\":1,\"20\":1,\"21\":1,\"22\":1,\"23\":1},\"WeeklyProfiles\"" +
+		":{\"Fri\":1,\"Mon\":1,\"Sat\":1,\"Sun\":1,\"Thu\":1,\"Tue\":1,\"Wed\":1},\"monthlyProfiles\":{\"Apr\":1,\"Aug\":1,\"Dec\":" +
+		"1,\"Feb\":1,\"Jan\":1,\"Jul\":1,\"Jun\":1,\"Mar\":1,\"May\":1,\"Nov\":1,\"Oct\":1,\"Sep\":1},\"variability\":5,\"unit\":" +
+		"\"kW\",\"interval\":15,\"startAt\":\"2017-01-01T00:00:00Z\", \"readings\":[]}")
 	// invalid hour
 	profile, err := NewProfileFromJson(profileBytesWithInvalidHour.Bytes())
 	if err != nil {

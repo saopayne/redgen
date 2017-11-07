@@ -27,7 +27,6 @@ var (
 	defaultProfileName  = "default_config.json"
 )
 
-// Profile represents a demonstration account profile
 type Profile struct {
 	Name                 string             `json:"name"`
 	BaseDailyConsumption float64            `json:"baseDailyConsumption"`
@@ -41,8 +40,6 @@ type Profile struct {
 	Readings             []Reading          `json:"readings"`
 }
 
-// Start represents a partially mocked clock
-// default timezone is UTC
 type Start struct {
 	Year  int    `json:"year,omitempty"`
 	Day   int    `json:"day,omitempty"`
@@ -50,15 +47,13 @@ type Start struct {
 	Hour  int    `json:"hour"`
 }
 
-// Save writes the profile JSON into a file, so it can be recovered later
 func Save(p Profile) {
-	err := WriteProfileToFile(p, SanitizeName(p.Name)+".json")
+	err := WriteProfileToFile(p, defaultProfilePath, SanitizeName(p.Name)+".json")
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-// Save writes the profile JSON into a file, so it can be recovered later
 func SaveReadings(p Profile, destinationFolderPath string) {
 	err := WriteReadingsToFile(p, filepath.Join(destinationFolderPath, SanitizeName(p.Name)+".json"))
 	if err != nil {
@@ -66,14 +61,10 @@ func SaveReadings(p Profile, destinationFolderPath string) {
 	}
 }
 
-// Handles the formatting of name, converting to lowercase,
-// trim whitespaces, replace spaces with underscore and replace non-ASCII characters
 func SanitizeName(name string) string {
 	trimmedName := strings.TrimSpace(name)
 	lowerCaseName := strings.ToLower(trimmedName)
-	// replace spaces in between the names with underscore
 	sanitizedName := strings.Replace(lowerCaseName, " ", "_", -1)
-	// remove non-ASCII characters
 	re := regexp.MustCompile("[[:^ascii:]]")
 	sanitizedName = re.ReplaceAllLiteralString(sanitizedName, "")
 
@@ -125,28 +116,14 @@ func (p Profile) StartAt() (time.Time, float64, error) {
 	return date, state, nil
 }
 
-// createProfile marshalls a Profile object into a JSON file
-func WriteProfileToFile(profile Profile, profileFile string) error {
+func WriteProfileToFile(profile Profile, path string, profileFile string) error {
 	jsonBytes, err := json.MarshalIndent(profile, "", "  ")
 	if err != nil {
 		return err
 	}
-	os.MkdirAll(defaultProfilePath, os.ModePerm)
+	os.MkdirAll(path, os.ModePerm)
 	sanitizedProfileName := SanitizeName(profileFile)
-	err = ioutil.WriteFile(filepath.Join(defaultProfilePath, sanitizedProfileName), jsonBytes, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// createProfile marshalls a Profile object into a JSON file
-func WriteProfileToReadingsFile(profile Profile, profileFile string) error {
-	jsonBytes, err := json.MarshalIndent(profile, "", "  ")
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(profileFile, jsonBytes, 0644)
+	err = ioutil.WriteFile(filepath.Join(path, sanitizedProfileName), jsonBytes, 0644)
 	if err != nil {
 		return err
 	}
@@ -168,7 +145,6 @@ func WriteReadingsToFile(profile Profile, profileFile string) error {
 	return nil
 }
 
-// newProfileFromJson unmarshalls the bytes of configuration file into a Profile object
 func NewProfileFromJson(profileBytes []byte) (Profile, error) {
 	profile := Profile{}
 	err := json.Unmarshal(profileBytes, &profile)
@@ -179,7 +155,6 @@ func NewProfileFromJson(profileBytes []byte) (Profile, error) {
 	return profile, nil
 }
 
-// createDefaultProfile returns a Profile object with the default configuration
 func CreateDefaultProfile(name string) Profile {
 	selectedName := ""
 	if name == "" {
@@ -196,13 +171,11 @@ func CreateDefaultProfile(name string) Profile {
 		Variability:          5,
 		Interval:             15,
 		Unit:                 "kW",
-		Start: time.Date(
-			2017, 01, 01, 00, 00, 00, 00, time.UTC),
-		Readings: make([]Reading, 0),
+		Start:                time.Date(2017, 01, 01, 00, 00, 00, 00, time.UTC),
+		Readings:             make([]Reading, 0),
 	}
 }
 
-// startDemonstration generate a reading based on the configured interval
 func GenerateReadings(profile Profile) {
 	var (
 		baseDailyConsumption = profile.BaseDailyConsumption
@@ -233,7 +206,6 @@ func GenerateReadings(profile Profile) {
 	}
 }
 
-// startDemonstration generate a reading based on the configured interval
 func GenerateSingleReading(profile Profile) Profile {
 	var (
 		baseDailyConsumption = profile.BaseDailyConsumption
@@ -259,7 +231,6 @@ func GenerateSingleReading(profile Profile) Profile {
 	return profile
 }
 
-// plotReadingsChart displays the readings generated for a configuration with ASCII art
 func PlotReadingsChart(profile Profile) {
 	err := termui.Init()
 	if err != nil {
@@ -312,12 +283,9 @@ func PlotReadingsChart(profile Profile) {
 	termui.Loop()
 }
 
-// plotMonthlyProfilesChart displays the monthly values
-// set for this configuration in a table format with ASCII art
 func PlotMonthlyProfilesChart(profile Profile) {
 	data := [][]string{}
 	var monthKeys []string
-	// to preserve ordering of the values
 	for k := range profile.MonthlyProfiles {
 		monthKeys = append(monthKeys, k)
 	}
@@ -339,12 +307,9 @@ func PlotMonthlyProfilesChart(profile Profile) {
 	table.Render()
 }
 
-// plotWeeklyProfilesChart displays the weekly values
-// set for this configuration in a table format with ASCII art
 func PlotWeeklyProfilesChart(profile Profile) {
 	data := [][]string{}
 	var weekKeys []string
-	// to preserve ordering of the values
 	for k := range profile.WeeklyProfiles {
 		weekKeys = append(weekKeys, k)
 	}
@@ -366,12 +331,9 @@ func PlotWeeklyProfilesChart(profile Profile) {
 	table.Render()
 }
 
-// plotHourlyProfilesChart displays the hourly values
-// set for this configuration in a table format with ASCII art
 func PlotHourlyProfilesChart(profile Profile) {
 	data := [][]string{}
 	var hourKeys []string
-	// to preserve iteration ordering
 	for k := range profile.HourlyProfiles {
 		hourKeys = append(hourKeys, k)
 	}

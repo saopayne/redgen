@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/go-ozzo/ozzo-validation"
-
 	"errors"
 	"fmt"
 	"strings"
@@ -78,24 +76,21 @@ func ValidateHourlyProfiles(p Profile) error {
 	hoursOfDay := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11",
 		"12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"}
 	var err error
-	if validation.IsEmpty(p.HourlyProfiles) {
+	if len(p.HourlyProfiles) < 1 {
 		err = errors.New("hourly profiles must be set")
 	}
 	for hour, value := range p.HourlyProfiles {
 		if !IsValueInList(hour, hoursOfDay) {
 			// The hour set isn't a valid houe
-			errorString := fmt.Sprintf("the hour %+v is not a valid hour, should be one of: %+v", hour, hoursOfDay)
-			err = errors.New(errorString)
+			err = fmt.Errorf("the hour %+v is not a valid hour, should be one of: %+v", hour, hoursOfDay)
 		}
 		if value <= 0 {
 			// The value set for an hour must be a minimum of 1
-			errorString := fmt.Sprintf("the minimum for any hour should be 1 , hour %+v has the value: %d", hour, value)
-			err = errors.New(errorString)
+			err = fmt.Errorf("the minimum for any hour should be 1 , hour %+v has the value: %d", hour, value)
 		}
 		if p.Unit != "w" && p.Unit != "kW" && value > 100 {
 			// The value set for an hour is too large
-			errorString := fmt.Sprintf("the hour %+v is too large with value: %d", hour, value)
-			err = errors.New(errorString)
+			err = fmt.Errorf("the hour %+v is too large with value: %d", hour, value)
 		}
 	}
 
@@ -107,24 +102,21 @@ func ValidateHourlyProfiles(p Profile) error {
 // It also ensures that no zero value is set and that an abnormal large value isn't given for a unit
 func ValidateWeeklyProfiles(p Profile) error {
 	var err error
-	if validation.IsEmpty(p.WeeklyProfiles) {
-		err = errors.New("weekly profiles must be set")
+	if len(p.WeeklyProfiles) < 1 {
+		err = fmt.Errorf("weekly profiles must be set")
 	}
 	for weekDay, value := range p.WeeklyProfiles {
 		if _, ok := weekDays[weekDay]; !ok {
 			// The week entered is not valid
-			errorString := fmt.Sprintf("the value set for week %+v is not valid, must be one of: %+v", weekDay, weekDays)
-			err = errors.New(errorString)
+			err = fmt.Errorf("the value set for week %+v is not valid, must be one of: %+v", weekDay, weekDays)
 		}
 		if value <= 0 {
 			// The value set for a week must be a minimum of 1
-			errorString := fmt.Sprintf("the minimum for any week should be 1 , week %+v has the value: %d", weekDay, value)
-			err = errors.New(errorString)
+			err = fmt.Errorf("the minimum for any week should be 1 , week %+v has the value: %d", weekDay, value)
 		}
 		if p.Unit != "w" && p.Unit != "kW" && value > 100 {
 			// The value set for a week is too large
-			errorString := fmt.Sprintf("the week %+v is too large with value: %d", weekDay, value)
-			err = errors.New(errorString)
+			err = fmt.Errorf("the week %+v is too large with value: %d", weekDay, value)
 		}
 	}
 
@@ -136,24 +128,21 @@ func ValidateWeeklyProfiles(p Profile) error {
 // It also ensures that no zero value is set and that an abnormal large value isn't given for a unit
 func ValidateMonthlyProfiles(p Profile) error {
 	var err error
-	if validation.IsEmpty(p.HourlyProfiles) {
-		err = errors.New("monthly profiles must be set")
+	if len(p.HourlyProfiles) < 1 {
+		err = fmt.Errorf("monthly profiles must be set")
 	}
 	for aMonth, value := range p.MonthlyProfiles {
 		if _, ok := months[aMonth]; !ok {
 			// The week entered is not valid
-			errorString := fmt.Sprintf("the value set for month %+v is not valid, must be one of: %+v", aMonth, months)
-			err = errors.New(errorString)
+			err = fmt.Errorf("the value set for month %+v is not valid, must be one of: %+v", aMonth, months)
 		}
 		if value <= 0 {
 			// The value set for a month must be a minimum of 1
-			errorString := fmt.Sprintf("the minimum for any month should be 1 , month %+v has the value: %d", aMonth, value)
-			err = errors.New(errorString)
+			err = fmt.Errorf("the minimum for any month should be 1 , month %+v has the value: %d", aMonth, value)
 		}
 		if p.Unit != "w" && p.Unit != "kW" && value > 100 {
 			// The value set for a week is too large
-			errorString := fmt.Sprintf("the month %+v is too large with value: %d", aMonth, value)
-			err = errors.New(errorString)
+			err = fmt.Errorf("the month %+v is too large with value: %d", aMonth, value)
 		}
 	}
 
@@ -165,18 +154,14 @@ func ValidateMonthlyProfiles(p Profile) error {
 func ValidateVariability(p Profile) error {
 	var err error
 	variability := p.Variability
-	if validation.IsEmpty(variability) {
-		err = errors.New("variability must be set")
-	}
 	if variability < 0 || variability >= 10 {
-		errorString := "variability cannot be lower than 0 and greater than 10"
-		err = errors.New(errorString)
+		err = fmt.Errorf("variability cannot be lower than 0 and greater than 10")
 	}
 	unit := p.Unit
 	baseDailyConsumption := GetValueforUnit(unit) * p.BaseDailyConsumption
 	consumptionLimit := baseDailyConsumption / 24
 	if consumptionLimit-p.Variability <= 0 {
-		err = errors.New("either the variability is too high or the base consumption is too low")
+		err = fmt.Errorf("either the variability is too high or the base consumption is too low")
 	}
 
 	return err
@@ -186,7 +171,7 @@ func ValidateVariability(p Profile) error {
 func ValidateBaseDailyConsumption(p Profile) error {
 	var err error
 	unit := p.Unit
-	if validation.IsEmpty(unit) {
+	if unit == "" {
 		err = errors.New("base daily consumption must be set for a profile")
 	}
 	baseDailyConsumption := p.BaseDailyConsumption
@@ -203,8 +188,7 @@ func ValidateBaseDailyConsumption(p Profile) error {
 func ValidateInterval(p Profile) error {
 	var err error
 	if p.Interval < 1 {
-		errorString := "interval must be either be 1 or greater than 1 minute"
-		err = errors.New(errorString)
+		err = fmt.Errorf("interval must be either be 1 or greater than 1 minute")
 	}
 
 	return err
@@ -218,24 +202,22 @@ func ValidateStart(p Profile) error {
 
 	var err error
 	start := p.Start
-	if validation.IsEmpty(start) {
-		err = errors.New("the start date of the profile must be set")
+	if start.IsZero() {
+		err = fmt.Errorf("the start date of the profile must be set")
 	}
 
 	if !IsValueInList(start.Month().String()[:3], months) {
 		// The week entered is not valid
-		errorString := fmt.Sprintf("the value set for month %+v is not valid, must be one of: %+v", start.Month, months)
-		err = errors.New(errorString)
+		err = fmt.Errorf("the value set for month %+v is not valid, must be one of: %+v", start.Month, months)
 	}
 
 	if !IsIntValueInList(start.Hour(), hoursOfDay) {
 		// The hour set isn't a valid hour
-		errorString := fmt.Sprintf("the hour %+v is not a valid hour, should be one of: %+v", start.Hour, hoursOfDay)
-		err = errors.New(errorString)
+		err = fmt.Errorf("the hour %+v is not a valid hour, should be one of: %+v", start.Hour, hoursOfDay)
 	}
 
 	if start.Year() <= 1990 || start.Year() > 2030 {
-		err = errors.New("the year set must be within 1990 and 2030")
+		err = fmt.Errorf("the year set must be within 1990 and 2030")
 	}
 
 	return err
@@ -268,31 +250,29 @@ func ValidateReadings(p Profile) error {
 
 // validateName ensures names have a minimum length of 5 and max of 50
 func ValidateName(p Profile) error {
-	return validation.ValidateStruct(&p,
-		// Name cannot be empty, and the length must between 5 and 50
-		validation.Field(&p.Name, validation.Required, validation.Length(5, 50)),
-	)
+	var err error
+	if len(p.Name) < 5 || len(p.Name) > 50 {
+		err = fmt.Errorf("the name must be between 5 and 50 characters")
+	}
+	return err
 }
 
 // validateUnit checks that the provided unit is a valid one
 func ValidateUnit(p Profile) error {
-	err := validation.ValidateStruct(&p,
-		// Base daily consumption cannot be empty, and the length must be 2
-		validation.Field(&p.Unit, validation.Required, validation.Length(2, 2)),
-	)
-	if err != nil {
-		return err
+	var err error
+	if len(p.Unit) < 2 || len(p.Unit) > 2 {
+		err = fmt.Errorf("the unit must be of length 2")
 	}
 	isValid := IsUnitValid(p.Unit)
 	if !isValid {
-		err = errors.New("THE UNIT SHOULD BE ONE OF: [ w, kW, mW, gW ]")
+		err = errors.New("the unit should be one of: [ w, kW, mW, gW ]")
 	}
 	return err
 }
 
 // validateProfile validates all the properties of the Profile struct
 // calls the appropriate validation method for each field
-func (p *Profile) ValidateProfile() error {
+func (p *Profile) Validate() error {
 	err := ValidateName(*p)
 	if err != nil {
 		return err

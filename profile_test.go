@@ -5,14 +5,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"path/filepath"
-	"reflect"
 	"testing"
 )
 
 func TestCreateProfile(t *testing.T) {
 	expectedProfile := CreateDefaultProfile("")
 
-	err := WriteProfileToFile(expectedProfile, defaultProfileName)
+	err := WriteProfileToFile(expectedProfile, defaultProfilePath, defaultProfileName)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -25,9 +24,7 @@ func TestCreateProfile(t *testing.T) {
 	profile := Profile{}
 	err = json.Unmarshal(profileBytes, &profile)
 
-	if !reflect.DeepEqual(expectedProfile, profile) {
-		t.Errorf("Expected:\n %+v,\n\ngot:\n %+v", expectedProfile, profile)
-	}
+	assert.EqualValues(t, expectedProfile, profile)
 }
 
 func TestSanitizeName(t *testing.T) {

@@ -19,104 +19,93 @@ var (
 
 const maxInt32 = 1<<(32-1) - 1
 
-// Parse the commands passed to the generator from the command line
-func ParseCLICommands() (string, error) {
+func RunAppCommands() (string, error) {
+	fmt.Println(os.Args[:])
 	enteredCommand := kingpin.MustParse(app.Parse(os.Args[1:]))
-	if len(enteredCommand) <= 2 {
-		return helpMsg, nil
-	}
 	switch enteredCommand {
-	// cmd: andy config version
 	case andyVersion.FullCommand():
 		return helpVersion, nil
 	case andyConfigStart.FullCommand():
-		InitGenerator()
-		return "", nil
-	// cmd: andy config generate "file.json"
+		return InitGenerator()
 	case andyConfigGenerate.FullCommand():
-		if *andyConfigGenerateArg != "" {
-			namesArr := strings.Split(*andyConfigGenerateArg, ".")
-			extractedName := SanitizeName(namesArr[0])
-			err := WriteProfileToFile(CreateDefaultProfile(extractedName), *andyConfigGenerateArg)
-			if err != nil {
-				log.Fatal(err.Error())
-			}
-			return fmt.Sprintf("%s file created into ./profiles", *andyConfigGenerateArg), nil
-		} else {
-			return helpMsg, nil
-		}
-	// cmd: andy config init
+		return CmdGenerate(*andyConfigGenerateArg)
 	case andyConfigInit.FullCommand():
-		err := WriteProfileToFile(CreateDefaultProfile(""), defaultProfileName)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		return "Default profile file created into ./profiles", nil
-	// cmd: andy config preview "file.json"
-	// "q" to quit the preview
+		return CmdInit()
 	case andyConfigPreview.FullCommand():
-		fmt.Println("An ASCII art demonstration of the profile is starting")
 		if *andyConfigPreviewArg != "" {
 			CmdPreviewAction(*andyConfigPreviewArg)
 		}
 		CmdPreviewAction(defaultProfileName)
 		return "", nil
-	// cmdL andy config send "file.json"
 	case andyConfigSend.FullCommand():
 		if *andyConfigSendArg != "" {
 			CmdSendReadingsToServer(*andyConfigSendArg)
 			return "", nil
 		}
 		return helpMsg, nil
-	// cmd: andy config validate "file.json"
 	case andyConfigValidate.FullCommand():
 		if *andyConfigValidateArg != "" {
 			CmdValidateAction(*andyConfigValidateArg, true)
 		}
 		CmdValidateAction(*andyConfigValidateArg, false)
 		return "", nil
-	// cmd: andy config profile "file.json"
 	case andyConfigProfile.FullCommand():
 		if *andyConfigProfileArg != "" {
 			CmdProfileAction(*andyConfigProfileArg)
 			return "", nil
 		}
 		return helpMsg, nil
-	// cmd: andy config show year "file.json"3=
 	case andyConfigShowYear.FullCommand():
 		if *andyConfigShowYearArg != "" {
 			return "No year config values to show for now :) ", nil
 		}
 		return helpMsg, nil
-	// cmd: andy config show month "file.json"
 	case andyConfigShowMonth.FullCommand():
 		if *andyConfigShowMonthArg != "" {
 			CmdPreviewMonthAction(*andyConfigShowMonthArg)
 			return "", nil
 		}
 		return helpMsg, nil
-	// cmd: andy config show week "file.json"
 	case andyConfigShowWeek.FullCommand():
 		if *andyConfigShowWeekArg != "" {
 			CmdPreviewWeekAction(*andyConfigShowWeekArg)
 			return "", nil
 		}
 		return helpMsg, nil
-	// cmd: andy config show day "file.json"
 	case andyConfigShowDay.FullCommand():
 		if *andyConfigShowDayArg != "" {
 			CmdPreviewHourAction(*andyConfigShowDayArg)
 			return "", nil
 		}
 		return helpMsg, nil
-	// cmd: andy config clear
 	case andyConfigClear.FullCommand():
-		fmt.Println("Do you really want to clear the all saved configurations")
 		return "", nil
 	default:
 		return helpMsg, fmt.Errorf("unknown command: %s", enteredCommand)
 	}
 	return "", nil
+}
+
+func CmdInit() (string, error) {
+	err := WriteProfileToFile(CreateDefaultProfile(""), defaultProfilePath, defaultProfileName)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	return "Default profile file created into ./profiles", nil
+}
+
+func CmdGenerate(arg string) (string, error) {
+	if arg != "" {
+		namesArr := strings.Split(arg, ".")
+		extractedName := SanitizeName(namesArr[0])
+		err := WriteProfileToFile(CreateDefaultProfile(extractedName), defaultProfilePath, arg)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		return fmt.Sprintf("%s file created into ./profiles", arg), nil
+	} else {
+		return helpMsg, nil
+	}
 }
 
 func CmdProfileAction(filename string) {
@@ -131,9 +120,7 @@ func CmdProfileAction(filename string) {
 	GenerateReadings(profile)
 }
 
-// plot all the readings for the given file
 func CmdPreviewAction(filename string) {
-	// implement ASCII art readings here
 	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -142,9 +129,7 @@ func CmdPreviewAction(filename string) {
 	PlotReadingsChart(profile)
 }
 
-// plot all the readings for a given month given a file
 func CmdPreviewMonthAction(filename string) {
-	// implement ASCII art readings here
 	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -153,9 +138,7 @@ func CmdPreviewMonthAction(filename string) {
 	PlotMonthlyProfilesChart(profile)
 }
 
-// plot all the readings for a given week given a file
 func CmdPreviewWeekAction(filename string) {
-	// implement ASCII art readings here
 	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -164,9 +147,7 @@ func CmdPreviewWeekAction(filename string) {
 	PlotWeeklyProfilesChart(profile)
 }
 
-// plot all the readings for a given hour given a file
 func CmdPreviewHourAction(filename string) {
-	// implement ASCII art readings here
 	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -177,7 +158,6 @@ func CmdPreviewHourAction(filename string) {
 
 func CmdValidateSingleFile(filename string) {
 	fmt.Printf("attempting to validate profile with name: %s", filename)
-	fmt.Println()
 	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -186,7 +166,7 @@ func CmdValidateSingleFile(filename string) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	err = profile.ValidateProfile()
+	err = profile.Validate()
 	if err != nil {
 		fmt.Println("The profile is not a valid profile")
 	}
@@ -216,7 +196,7 @@ func CmdSendReadingsToServer(filename string) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	err = profile.ValidateProfile()
+	err = profile.Validate()
 	if err != nil {
 		log.Println("The profile is not valid", profile)
 	}
@@ -224,21 +204,19 @@ func CmdSendReadingsToServer(filename string) {
 	// send the readings to the api at this point
 	resp, err := librarianService.sendReadingsAction(profile)
 	fmt.Println("SendReadingsAction() httpResp", resp)
-
 }
 
 // InitGenerator starts the application and calls the function which runs
 // every 5 seconds for now (should be 15 mins ideally)
-func InitGenerator() {
-	// generate readings and send every interval specified below
+func InitGenerator() (string, error) {
 	t := time.NewTicker(time.Second * 5)
 	for {
 		SendReadingsOnStart()
 		<-t.C
 	}
+	return "", nil
 }
 
-// SendReadingsOnStart sends the result to the API for each reading in the file,
 func SendReadingsOnStart() {
 	parseableFileNamesList, _ := GetAppendedParsedFileNames()
 	// check if a file with the last reading exists, if not create and leave empty
@@ -247,15 +225,11 @@ func SendReadingsOnStart() {
 	// account for the time lost by updating the state with an estimated value for the time it was offline but it should continue appending
 	// reading from now (just add the state from say State: 10 -> 12 -> [...offline for three missed readings] -> 20 [14->16->18 skipped] but state added
 	for _, filename := range parseableFileNamesList {
-		// for each valid config, create a readings file in the readings dir if file is empty
-		profile, _ := IsReadingFileExist(filename)
+		profile, _ := GetProfileFromFile(filename)
 		profile = GenerateSingleReading(profile)
-		// send reading to the API, if successful, update the file
 		librarianService := new(LibrarianService)
-		// send the readings to the api at this point
 		resp, err := librarianService.sendReadingsAction(profile)
 		if err == nil {
-			// if the request was successful, save the readings to a file
 			if resp.StatusCode == 200 || resp.StatusCode == 201 {
 				SaveReadings(profile, defaultReadingsPath)
 			} else {
@@ -268,47 +242,36 @@ func SendReadingsOnStart() {
 	}
 }
 
-func IsReadingFileExist(filename string) (Profile, bool) {
-	// create readings directory if it doesn't currently exist
+func GetProfileFromFile(filename string) (Profile, bool) {
 	if _, err := os.Stat(defaultReadingsPath); os.IsNotExist(err) {
 		os.Mkdir(defaultReadingsPath, os.ModePerm)
 	}
-	// create a latest readings file if it doesn't exist and leave empty
-	// in the empty file, write the profile config since readings will be appended to it
+
 	readingsFile := filepath.Join(defaultReadingsPath, filename)
 	if _, err := os.Stat(readingsFile); os.IsNotExist(err) {
 		_, err = os.Create(readingsFile)
-		// marshall the config into a Profile and unmarshall back into json
-		fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		profile, err := NewProfileFromJson(fileBytes)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		err = profile.ValidateProfile()
-		// write into the new file
-		_ = WriteProfileToReadingsFile(profile, readingsFile)
+		profile, _ := GetProfileFromJson(readingsFile)
+		_ = WriteProfileToFile(profile, defaultReadingsPath, filename)
 		return profile, false
 	} else {
-		// marshall the config into a Profile and unmarshall back into json
-		fileBytes, err := ioutil.ReadFile(filepath.Join(defaultReadingsPath, filename))
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		profile, err := NewProfileFromJson(fileBytes)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		err = profile.ValidateProfile()
+		profile, _ := GetProfileFromJson(filepath.Join(defaultReadingsPath, filename))
 		return profile, true
 	}
 }
 
-// GetAppendedParsedFileNames gets the 2 slices each containing valid and invalid names of files
-// It writes the list to a persistent file instead of keeping in memory
-// Returns list of the saved invalid and valid config file names
+func GetProfileFromJson(filepath string) (Profile, error) {
+	fileBytes, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	profile, err := NewProfileFromJson(fileBytes)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	err = profile.Validate()
+	return profile, err
+}
+
 func GetAppendedParsedFileNames() (validFileNames []string, invalidFileNames []string) {
 	parseableNamesList, unparseableNamesList := SplitParseableConfigFiles()
 	os.MkdirAll(parseFolderPath, os.ModePerm)
@@ -341,12 +304,7 @@ func GetAppendedParsedFileNames() (validFileNames []string, invalidFileNames []s
 	return parseableFileNamesList, unparseableFileNamesList
 }
 
-// SplitParseableConfigFiles scans the profiles directory and for each json configuration file,
-// it creates two slices
-// > Slice 1 to store a list of the names of the config files which are valid
-// > Slice 2 to store a list of the names of the config files which are invalid
 func SplitParseableConfigFiles() (parseableList []string, unparseableList []string) {
-	// return list of parseable files
 	files, err := ioutil.ReadDir(defaultProfilePath)
 	if err != nil {
 		log.Fatal(err)
@@ -362,12 +320,10 @@ func SplitParseableConfigFiles() (parseableList []string, unparseableList []stri
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		err = profile.ValidateProfile()
+		err = profile.Validate()
 		if err != nil {
-			// add file to unparseable list
 			unparseableNamesList = append(unparseableNamesList, f.Name())
 		} else {
-			// add the filename to parseable
 			parseableNamesList = append(parseableNamesList, f.Name())
 		}
 	}

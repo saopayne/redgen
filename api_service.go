@@ -21,7 +21,6 @@ var httpClient = &http.Client{
 	Timeout: time.Second * 10,
 }
 
-// LibrarianService provides methods for sending readings to the API
 type LibrarianService struct {
 	sling    *sling.Sling
 	URL      string
@@ -29,49 +28,6 @@ type LibrarianService struct {
 	HttpType string
 }
 
-// Response is a simplified data the enectiva API sends
-type Response struct {
-	ID   int    `json:"id"`
-	Body string `json:"body"`
-}
-
-type LibrarianError struct {
-	Message string `json:"message"`
-	Errors  []struct {
-		Resource string `json:"resource"`
-		Field    string `json:"field"`
-		Code     string `json:"code"`
-	} `json:"errors"`
-}
-
-func (e LibrarianError) Error() string {
-	return fmt.Sprintf("enectiva reading: %v %+v", e.Message, e.Errors)
-}
-
-// This function creates the schedule that sends the readings to the API
-// It accepts a function parameter which specifies the function to perform
-// It also accepts a time delay to run the function in subsequent times (typically 15 minutes)
-func sendReadingsSchedule(action func(), delay time.Duration) chan bool {
-	stop := make(chan bool)
-	ticker := time.NewTicker(delay)
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				action()
-			case <-stop:
-				ticker.Stop()
-				return
-			}
-		}
-	}()
-
-	return stop
-}
-
-// Given a series, this function goes through the readings in the series
-// For each given given, send the reading to the API
-// If the POST was successful, remove from temp storage and avoid retry
 func (s *LibrarianService) sendReadingsAction(p Profile) (*http.Response, error) {
 	service := &LibrarianService{
 		URL:      ApiUrl,
@@ -104,7 +60,6 @@ func (s *LibrarianService) sendReadingsAction(p Profile) (*http.Response, error)
 	return resp, nil
 }
 
-//BuildHTTPRequest builds a request (Sets Body and Header)
 func (s *LibrarianService) BuildHTTPRequest(body []byte) (*http.Request, error) {
 	req, err := http.NewRequest(s.HttpType, s.URL, bytes.NewBuffer(body))
 	if err != nil {
@@ -116,7 +71,6 @@ func (s *LibrarianService) BuildHTTPRequest(body []byte) (*http.Request, error) 
 	return req, nil
 }
 
-//SendHTTPRequest sends the request and returns a response from SMC Server
 func SendHTTPRequest(client *http.Client, req *http.Request) (*http.Response, error) {
 	resp, err := client.Do(req)
 	if err != nil {

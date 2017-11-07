@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	msg, err := ParseCLICommands()
+	msg, err := RunAppCommands()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
