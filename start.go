@@ -56,26 +56,17 @@ func RunAppCommands() (string, error) {
 			return "", nil
 		}
 		return helpMsg, nil
-	case andyConfigShowYear.FullCommand():
-		if *andyConfigShowYearArg != "" {
-			return "No year config values to show for now :) ", nil
-		}
-		return helpMsg, nil
-	case andyConfigShowMonth.FullCommand():
-		if *andyConfigShowMonthArg != "" {
-			CmdPreviewMonthAction(*andyConfigShowMonthArg)
-			return "", nil
-		}
-		return helpMsg, nil
-	case andyConfigShowWeek.FullCommand():
-		if *andyConfigShowWeekArg != "" {
-			CmdPreviewWeekAction(*andyConfigShowWeekArg)
-			return "", nil
-		}
-		return helpMsg, nil
-	case andyConfigShowDay.FullCommand():
-		if *andyConfigShowDayArg != "" {
-			CmdPreviewHourAction(*andyConfigShowDayArg)
+	case andyConfigShow.FullCommand():
+		if *andyConfigShowFileName != "" {
+			if *andyConfigShowYearFlag != "" {
+				ShowYearConsumption(*andyConfigShowFileName, *andyConfigShowYearFlag)
+			}
+			if *andyConfigShowMonthFlag != "" {
+				ShowMonthConsumption(*andyConfigShowFileName, *andyConfigShowMonthFlag)
+			}
+			if *andyConfigShowDayFlag != "" {
+				ShowDayConsumption(*andyConfigShowFileName, *andyConfigShowDayFlag)
+			}
 			return "", nil
 		}
 		return helpMsg, nil
@@ -128,33 +119,6 @@ func CmdPreviewAction(filename string) {
 	}
 	profile, err := NewProfileFromJson(fileBytes)
 	PlotReadingsChart(profile)
-}
-
-func CmdPreviewMonthAction(filename string) {
-	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	profile, err := NewProfileFromJson(fileBytes)
-	PlotMonthlyProfilesChart(profile)
-}
-
-func CmdPreviewWeekAction(filename string) {
-	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	profile, err := NewProfileFromJson(fileBytes)
-	PlotWeeklyProfilesChart(profile)
-}
-
-func CmdPreviewHourAction(filename string) {
-	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	profile, err := NewProfileFromJson(fileBytes)
-	PlotHourlyProfilesChart(profile)
 }
 
 func CmdValidateSingleFile(filename string) {

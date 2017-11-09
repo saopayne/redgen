@@ -42,19 +42,8 @@ var (
 	// andy config show
 	andyConfigShow = andyConfig.Command("show", "")
 
-	// andy config show year "sample_file.json" "
-	andyConfigShowYear    = andyConfigShow.Command("year", "")
-	andyConfigShowYearArg = andyConfigShowYear.Arg("profile.json", "Displays the year for the provided configuration").String()
-
-	// andy config show month "sample_file.json"
-	andyConfigShowMonth    = andyConfigShow.Command("month", "")
-	andyConfigShowMonthArg = andyConfigShowMonth.Arg("profile.json", "Displays the month for the provided configuration").String()
-
-	// andy config show week "sample_file.json"
-	andyConfigShowWeek    = andyConfigShow.Command("week", "")
-	andyConfigShowWeekArg = andyConfigShowWeek.Arg("profile.json", "Displays the week for the provided configuration").String()
-
-	// andy config show day "sample_file.json"
-	andyConfigShowDay    = andyConfigShow.Command("day", "")
-	andyConfigShowDayArg = andyConfigShowDay.Arg("profile.json", "Displays the day for the provided configuration").String()
+	andyConfigShowFileName  = andyConfigShow.Arg("filename", "Add the readings filename to show").String()
+	andyConfigShowYearFlag  = andyConfigShow.Flag("year", "Add the year you wish to display consumption for").String()
+	andyConfigShowMonthFlag = andyConfigShow.Flag("month", "Add the year-month you wish to display consumption for").String()
+	andyConfigShowDayFlag   = andyConfigShow.Flag("day", "Add the year-month-day you wish to display consumption for").String()
 )
