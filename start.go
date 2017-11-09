@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -20,7 +22,6 @@ var (
 const maxInt32 = 1<<(32-1) - 1
 
 func RunAppCommands() (string, error) {
-	fmt.Println(os.Args[:])
 	enteredCommand := kingpin.MustParse(app.Parse(os.Args[1:]))
 	switch enteredCommand {
 	case andyVersion.FullCommand():
@@ -374,4 +375,125 @@ func EncodeFileNamesAsBytes(s []string) []byte {
 		b = append(b, ss...)
 	}
 	return b
+}
+
+func ShowDayConsumption(filename string, day string) {
+	profile, err := GetProfileFromJson(filepath.Join(defaultReadingsPath, filename))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	mDay := day
+	var newReadingValues []Reading
+	for _, reading := range profile.Readings {
+		if strings.Contains(reading.Time.String(), mDay) {
+			newReadingValues = append(newReadingValues, reading)
+		}
+	}
+	// calculate the differences between two hours for each reading
+	readingHourMap := make(map[int]float64)
+	for _, reading := range newReadingValues {
+		if readingHourMap[reading.Time.Hour()] == 0 {
+			readingHourMap[reading.Time.Hour()] = reading.State
+		}
+	}
+
+	hourKeys := []int{}
+	hourLabels := []int{}
+	for k, _ := range readingHourMap {
+		hourKeys = append(hourKeys, k)
+	}
+	sort.Ints(hourKeys)
+	unit := ""
+	for _, k := range hourKeys {
+		switch profile.Unit {
+		case "kW":
+			hourLabels = append(hourLabels, int(readingHourMap[k]*100))
+			unit = "W"
+			break
+		case "mW":
+			hourLabels = append(hourLabels, int(readingHourMap[k]*100))
+			unit = "kW"
+			break
+		case "gW":
+			hourLabels = append(hourLabels, int(readingHourMap[k]*100))
+			unit = "mW"
+			break
+		default:
+			hourLabels = append(hourLabels, int(readingHourMap[k]*100))
+			unit = profile.Unit
+			break
+		}
+
+	}
+	newHourKeys := GetStringSliceFromInt(hourKeys)
+	header := fmt.Sprintf("Hourly Consumption for %s in (%s) : Value is multiplied by 100", mDay, unit)
+	PlotBarChart(hourLabels, newHourKeys, header)
+}
+
+func ShowYearConsumption(filename string, year string) {
+	profile, err := GetProfileFromJson(filepath.Join(defaultReadingsPath, filename))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	mYear := year
+	var newReadingValues []Reading
+	for _, reading := range profile.Readings {
+		if strings.Contains(reading.Time.String(), mYear) {
+			newReadingValues = append(newReadingValues, reading)
+		}
+	}
+
+	readingMonthMap := make(map[time.Month]float64)
+	for _, reading := range newReadingValues {
+		readingMonthMap[reading.Time.Month()] = reading.State
+	}
+
+	monthKeys := []time.Month{}
+	monthLabels := []float64{}
+	for k, _ := range readingMonthMap {
+		monthKeys = append(monthKeys, k)
+		monthLabels = append(monthLabels, readingMonthMap[k])
+	}
+	normMonthLabels := []string{}
+	for _, k := range monthKeys {
+		normMonthLabels = append(normMonthLabels, k.String())
+	}
+	normMonthKeys := GetIntSliceFromFloat(monthLabels)
+	header := fmt.Sprintf("Monthly Consumption for %s in (%s) ", mYear, profile.Unit)
+	PlotBarChart(normMonthKeys, normMonthLabels, header)
+}
+
+func ShowMonthConsumption(filename string, month string) {
+	profile, err := GetProfileFromJson(filepath.Join(defaultReadingsPath, filename))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	mMonth := month
+	var newReadingValues []Reading
+	for _, reading := range profile.Readings {
+		if strings.Contains(reading.Time.String(), mMonth) {
+			newReadingValues = append(newReadingValues, reading)
+		}
+	}
+
+	readingMonthMap := make(map[int]float64)
+	for _, reading := range newReadingValues {
+		readingMonthMap[reading.Time.Day()] = reading.State
+	}
+
+	daysKeys := []int{}
+	daysLabels := []float64{}
+	for k, _ := range readingMonthMap {
+		daysKeys = append(daysKeys, k)
+		daysLabels = append(daysLabels, readingMonthMap[k])
+	}
+	normDaysLabels := []string{}
+	for _, k := range daysKeys {
+		normDaysLabels = append(normDaysLabels, strconv.Itoa(k))
+	}
+
+	normDaysKeys := GetIntSliceFromFloat(daysLabels)
+	header := fmt.Sprintf("Monthly Consumption for %s in (%s) ", mMonth, profile.Unit)
+
+	PlotBarChart(normDaysKeys, normDaysLabels, header)
 }

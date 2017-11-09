@@ -42,7 +42,7 @@ var (
 	// andy config show
 	andyConfigShow = andyConfig.Command("show", "")
 
-	// andy config show year "sample_file.json"
+	// andy config show year "sample_file.json" "
 	andyConfigShowYear    = andyConfigShow.Command("year", "")
 	andyConfigShowYearArg = andyConfigShowYear.Arg("profile.json", "Displays the year for the provided configuration").String()
 

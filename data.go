@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gizak/termui"
 	"strconv"
 	"time"
 )
@@ -83,7 +84,50 @@ var defaultMonthlyProfile = map[string]float64{
 	"Dec": 1,
 }
 
+func PlotBarChart(keys []int, labels []string, header string) {
+	if err := termui.Init(); err != nil {
+		panic(err)
+	}
+	defer termui.Close()
+	bc := termui.NewBarChart()
+	bc.BorderLabel = header
+	bc.Data = keys
+	bc.Width = 170
+	bc.Height = 15
+	bc.DataLabels = labels
+	bc.BarGap = 1
+	bc.BarWidth = 6
+	bc.TextColor = termui.ColorGreen
+	bc.BarColor = termui.ColorRed
+	bc.NumColor = termui.ColorYellow
+
+	termui.Render(bc)
+
+	termui.Handle("/sys/kbd/q", func(termui.Event) {
+		termui.StopLoop()
+	})
+	termui.Loop()
+}
+
 func FloatToString(input_num float64) string {
 	// to convert a float number to a string
-	return strconv.FormatFloat(input_num, 'f', 0, 64)
+	return strconv.FormatFloat(input_num, 'f', 6, 64)
+}
+
+func GetStringSliceFromInt(intKeys []int) []string {
+	var stringKeys = []string{}
+	for _, i := range intKeys {
+		j := strconv.Itoa(i)
+		stringKeys = append(stringKeys, j)
+	}
+	return stringKeys
+}
+
+func GetIntSliceFromFloat(floatKeys []float64) []int {
+	var intKeys = []int{}
+	for _, i := range floatKeys {
+		j := int(i)
+		intKeys = append(intKeys, j)
+	}
+	return intKeys
 }
