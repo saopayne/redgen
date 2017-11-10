@@ -58,14 +58,8 @@ func RunAppCommands() (string, error) {
 		return helpMsg, nil
 	case andyConfigShow.FullCommand():
 		if *andyConfigShowFileName != "" {
-			if *andyConfigShowYearFlag != "" {
-				ShowYearConsumption(*andyConfigShowFileName, *andyConfigShowYearFlag)
-			}
-			if *andyConfigShowMonthFlag != "" {
-				ShowMonthConsumption(*andyConfigShowFileName, *andyConfigShowMonthFlag)
-			}
-			if *andyConfigShowDayFlag != "" {
-				ShowDayConsumption(*andyConfigShowFileName, *andyConfigShowDayFlag)
+			if *andyConfigShowDateFlag != "" {
+				ShowDateConsumption(*andyConfigShowFileName, *andyConfigShowDateFlag)
 			}
 			return "", nil
 		}
@@ -339,6 +333,17 @@ func EncodeFileNamesAsBytes(s []string) []byte {
 		b = append(b, ss...)
 	}
 	return b
+}
+
+func ShowDateConsumption(filename string, date string) {
+	splitDate := strings.Split(date, "-")
+	if len(splitDate) == 1 {
+		ShowYearConsumption(filename, date)
+	} else if len(splitDate) == 2 {
+		ShowMonthConsumption(filename, date)
+	} else if len(splitDate) == 3 {
+		ShowDayConsumption(filename, date)
+	}
 }
 
 func ShowDayConsumption(filename string, day string) {

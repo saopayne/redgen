@@ -43,7 +43,5 @@ var (
 	andyConfigShow = andyConfig.Command("show", "")
 
 	andyConfigShowFileName  = andyConfigShow.Arg("filename", "Add the readings filename to show").String()
-	andyConfigShowYearFlag  = andyConfigShow.Flag("year", "Add the year you wish to display consumption for").String()
-	andyConfigShowMonthFlag = andyConfigShow.Flag("month", "Add the year-month you wish to display consumption for").String()
-	andyConfigShowDayFlag   = andyConfigShow.Flag("day", "Add the year-month-day you wish to display consumption for").String()
+	andyConfigShowDateFlag   = andyConfigShow.Flag("date", "Add the year-month-day you wish to display consumption for").String()
 )
