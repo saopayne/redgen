@@ -336,21 +336,21 @@ func EncodeFileNamesAsBytes(s []string) []byte {
 }
 
 func ShowDateConsumption(filename string, date string) {
-	splitDate := strings.Split(date, "-")
-	if len(splitDate) == 1 {
-		ShowYearConsumption(filename, date)
-	} else if len(splitDate) == 2 {
-		ShowMonthConsumption(filename, date)
-	} else if len(splitDate) == 3 {
-		ShowDayConsumption(filename, date)
-	}
-}
-
-func ShowDayConsumption(filename string, day string) {
 	profile, err := GetProfileFromJson(filepath.Join(defaultReadingsPath, filename))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	splitDate := strings.Split(date, "-")
+	if len(splitDate) == 1 {
+		ShowYearConsumption(profile, date)
+	} else if len(splitDate) == 2 {
+		ShowMonthConsumption(profile, date)
+	} else if len(splitDate) == 3 {
+		ShowDayConsumption(profile, date)
+	}
+}
+
+func ShowDayConsumption(profile Profile, day string) {
 	mDay := day
 	var newReadingValues []Reading
 	for _, reading := range profile.Readings {
@@ -376,34 +376,36 @@ func ShowDayConsumption(filename string, day string) {
 	for _, k := range hourKeys {
 		switch profile.Unit {
 		case "kW":
-			hourLabels = append(hourLabels, int(readingHourMap[k]*100))
+			hourLabels = append(hourLabels, int(readingHourMap[k] * GetValueForEnergyUnit(profile.Unit)))
 			unit = "W"
 			break
-		case "mW":
-			hourLabels = append(hourLabels, int(readingHourMap[k]*100))
-			unit = "kW"
-			break
-		case "gW":
-			hourLabels = append(hourLabels, int(readingHourMap[k]*100))
-			unit = "mW"
-			break
 		default:
-			hourLabels = append(hourLabels, int(readingHourMap[k]*100))
+			hourLabels = append(hourLabels, int(readingHourMap[k]))
 			unit = profile.Unit
 			break
 		}
 
 	}
 	newHourKeys := GetStringSliceFromInt(hourKeys)
-	header := fmt.Sprintf("Hourly Consumption for %s in (%s) : Value is multiplied by 100", mDay, unit)
+	header := fmt.Sprintf("Hourly Consumption for %s in (%s)", mDay, unit)
 	PlotBarChart(hourLabels, newHourKeys, header)
 }
 
-func ShowYearConsumption(filename string, year string) {
-	profile, err := GetProfileFromJson(filepath.Join(defaultReadingsPath, filename))
-	if err != nil {
-		log.Fatal(err.Error())
+func GetValueForEnergyUnit(unit string) float64 {
+	var unitValueMap = map[string]float64{
+		"mW": 1 / 1000,
+		"W":  1,
+		"kW": 1000,
+		"MW": 1000000,
+		"GW": 100000000,
 	}
+	if unitValueMap[unit] != 0 {
+		return unitValueMap[unit]
+	}
+	return 0
+}
+
+func ShowYearConsumption(profile Profile, year string) {
 	mYear := year
 	var newReadingValues []Reading
 	for _, reading := range profile.Readings {
@@ -432,11 +434,7 @@ func ShowYearConsumption(filename string, year string) {
 	PlotBarChart(normMonthKeys, normMonthLabels, header)
 }
 
-func ShowMonthConsumption(filename string, month string) {
-	profile, err := GetProfileFromJson(filepath.Join(defaultReadingsPath, filename))
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+func ShowMonthConsumption(profile Profile, month string) {
 	mMonth := month
 	var newReadingValues []Reading
 	for _, reading := range profile.Readings {
