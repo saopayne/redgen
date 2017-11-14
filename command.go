@@ -15,7 +15,7 @@ var (
 	// config init
 	andyConfigInit = andyConfig.Command("init", "Create a default profile.")
 
-	// config init
+	// config start
 	andyConfigStart = andyConfig.Command("start", "Start running the application")
 
 	// config generate "sample_file.json"
@@ -41,6 +41,6 @@ var (
 	// config show
 	andyConfigShow = andyConfig.Command("show", "")
 
-	andyConfigShowFileName  = andyConfigShow.Arg("filename", "Add the readings filename to show").String()
-	andyConfigShowDateFlag  = andyConfigShow.Flag("date", "Add the year-month-day you wish to display consumption for").String()
+	andyConfigShowFileName = andyConfigShow.Arg("filename", "Add the readings filename to show").String()
+	andyConfigShowDateFlag = andyConfigShow.Flag("date", "Add the year-month-day you wish to display consumption for").String()
 )

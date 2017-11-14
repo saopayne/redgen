@@ -35,29 +35,32 @@ func (s *LibrarianService) sendReadingsAction(p Profile) (*http.Response, error)
 		HttpType: http.MethodPost,
 	}
 	totalReadings := len(p.Readings)
+	if totalReadings > 0 {
+		eachReading := p.Readings[totalReadings-1]
+		eachReading.MeterId = "test"
+		eachReading.Sender = "ademola"
+		postData := map[string]Reading{"data": eachReading}
+		jsonReading, err := json.Marshal(postData)
+		req, err := service.BuildHTTPRequest(jsonReading)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := SendHTTPRequest(httpClient, req)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("response Status:", resp.Status)
+		body, err := ioutil.ReadAll(resp.Body)
+		defer resp.Body.Close()
+		if err != nil {
+			fmt.Println("response Body:", string(body))
+			return resp, err
+		}
+		return resp, nil
+	} else {
+		return nil, nil
+	}
 
-	eachReading := p.Readings[totalReadings-1]
-	eachReading.MeterId = "test"
-	eachReading.Sender = "ademola"
-	postData := map[string]Reading{"data": eachReading}
-	jsonReading, err := json.Marshal(postData)
-	req, err := service.BuildHTTPRequest(jsonReading)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := SendHTTPRequest(httpClient, req)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("response Status:", resp.Status)
-	body, err := ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
-	if err != nil {
-		fmt.Println("response Body:", string(body))
-		return resp, err
-	}
-
-	return resp, nil
 }
 
 func (s *LibrarianService) BuildHTTPRequest(body []byte) (*http.Request, error) {

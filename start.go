@@ -189,10 +189,12 @@ func SendReadingsOnStart() {
 		librarianService := new(LibrarianService)
 		resp, err := librarianService.sendReadingsAction(profile)
 		if err == nil {
-			if resp.StatusCode == 200 || resp.StatusCode == 201 {
-				SaveReadings(profile, defaultReadingsPath)
-			} else {
-				log.Println("Sent reading responded with a status other than 200 OK success", resp.StatusCode)
+			if resp != nil {
+				if resp.StatusCode == 200 || resp.StatusCode == 201 {
+					SaveReadings(profile, defaultReadingsPath)
+				} else {
+					log.Println("Sent reading responded with a status other than 200 OK success", resp.StatusCode)
+				}
 			}
 		} else {
 			log.Println("Encountered an error while sending reading to the API", err)
@@ -209,7 +211,7 @@ func GetProfileFromFile(filename string) (Profile, bool) {
 	readingsFile := filepath.Join(defaultReadingsPath, filename)
 	if _, err := os.Stat(readingsFile); os.IsNotExist(err) {
 		_, err = os.Create(readingsFile)
-		profile, _ := GetProfileFromJson(readingsFile)
+		profile, _ := GetProfileFromJson(filepath.Join(defaultProfilePath, filename))
 		_ = WriteProfileToFile(profile, defaultReadingsPath, filename)
 		return profile, false
 	} else {
@@ -232,6 +234,7 @@ func GetProfileFromJson(filepath string) (Profile, error) {
 }
 
 func GetAppendedParsedFileNames() (validFileNames []string, invalidFileNames []string) {
+	println("in here GetAppendedParsedFileNames()")
 	parseableNamesList, unparseableNamesList := SplitParseableConfigFiles()
 	os.MkdirAll(parseFolderPath, os.ModePerm)
 	if _, err := os.Stat(parseableFileFullPath); os.IsNotExist(err) {
@@ -376,7 +379,7 @@ func ShowDayConsumption(profile Profile, day string) {
 	for _, k := range hourKeys {
 		switch profile.Unit {
 		case "kW":
-			hourLabels = append(hourLabels, int(readingHourMap[k] * GetValueForEnergyUnit(profile.Unit)))
+			hourLabels = append(hourLabels, int(readingHourMap[k]*GetValueForEnergyUnit(profile.Unit)))
 			unit = "W"
 			break
 		default:
