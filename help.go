@@ -2,7 +2,7 @@ package main
 
 var helpVersion = "v0.1"
 
-var helpMsg = `andy config
+var helpMsg = `
 Andy generates profiles for demonstration accounts
 	config start											Starts running the app, validate and send readings
 	config version											Show andy version

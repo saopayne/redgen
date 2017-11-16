@@ -35,6 +35,7 @@ func RunAppCommands() (string, error) {
 	case andyConfigPreview.FullCommand():
 		if *andyConfigPreviewArg != "" {
 			CmdPreviewAction(*andyConfigPreviewArg)
+			return "", nil
 		}
 		CmdPreviewAction(defaultProfileName)
 		return "", nil
@@ -107,7 +108,7 @@ func CmdProfileAction(filename string) {
 }
 
 func CmdPreviewAction(filename string) {
-	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
+	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultReadingsPath, filename))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -234,7 +235,6 @@ func GetProfileFromJson(filepath string) (Profile, error) {
 }
 
 func GetAppendedParsedFileNames() (validFileNames []string, invalidFileNames []string) {
-	println("in here GetAppendedParsedFileNames()")
 	parseableNamesList, unparseableNamesList := SplitParseableConfigFiles()
 	os.MkdirAll(parseFolderPath, os.ModePerm)
 	if _, err := os.Stat(parseableFileFullPath); os.IsNotExist(err) {
