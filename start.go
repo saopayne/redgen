@@ -104,16 +104,53 @@ func CmdProfileAction(filename string) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	GenerateReadings(profile)
+	GenerateReadings(profile, defaultReadingsPath)
 }
 
 func CmdPreviewAction(filename string) {
-	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultReadingsPath, filename))
+	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 	profile, err := NewProfileFromJson(fileBytes)
-	PlotReadingsChart(profile)
+	profile.Validate()
+	fmt.Println("Generating sample consumption data for the profile")
+	profile = GeneratePreviewData(profile)
+
+	startTime := profile.Readings[0].Time.String()
+	formattedDay := startTime[:10]
+	ShowDayConsumption(profile, formattedDay)
+}
+
+func GeneratePreviewData(profile Profile) Profile {
+	var (
+		baseDailyConsumption = profile.BaseDailyConsumption
+		variability          = profile.Variability
+	)
+
+	date, state, err := profile.StartAt()
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	var readings []Reading
+	for i := 0; i < 200; i++ {
+		hourValue := strconv.Itoa(date.Hour())
+		weekValue := date.Weekday().String()
+		monthValue := date.Month().String()
+		var (
+			hourBase  = profile.HourlyProfiles[hourValue]
+			weekBase  = profile.WeeklyProfiles[weekValue[:3]]
+			monthBase = profile.MonthlyProfiles[monthValue[:3]]
+		)
+		reading := NewReading(date, profile.Unit, profile.Interval, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state)
+		readings = append(readings, reading)
+
+		time.Sleep(5 * time.Millisecond)
+		date = date.Add(time.Duration(profile.Interval) * time.Minute)
+	}
+	profile.Readings = readings
+	return profile
 }
 
 func CmdValidateSingleFile(filename string) {
@@ -285,6 +322,7 @@ func SplitParseableConfigFiles() (parseableList []string, unparseableList []stri
 		err = profile.Validate()
 		if err != nil {
 			unparseableNamesList = append(unparseableNamesList, f.Name())
+			panic(err)
 		} else {
 			parseableNamesList = append(parseableNamesList, f.Name())
 		}
@@ -355,9 +393,11 @@ func ShowDateConsumption(filename string, date string) {
 
 func ShowDayConsumption(profile Profile, day string) {
 	mDay := day
+	intervalMultiplier := 60 / profile.Interval
 	var newReadingValues []Reading
 	for _, reading := range profile.Readings {
 		if strings.Contains(reading.Time.String(), mDay) {
+			reading.State = reading.State * intervalMultiplier
 			newReadingValues = append(newReadingValues, reading)
 		}
 	}
@@ -369,8 +409,8 @@ func ShowDayConsumption(profile Profile, day string) {
 		}
 	}
 
-	hourKeys := []int{}
-	hourLabels := []int{}
+	var hourKeys []int
+	var hourLabels []int
 	for k, _ := range readingHourMap {
 		hourKeys = append(hourKeys, k)
 	}
@@ -390,7 +430,7 @@ func ShowDayConsumption(profile Profile, day string) {
 
 	}
 	newHourKeys := GetStringSliceFromInt(hourKeys)
-	header := fmt.Sprintf("Hourly Consumption for %s in (%s)", mDay, unit)
+	header := fmt.Sprintf("Hourly Consumption for %s in (%s) ", mDay, unit)
 	PlotBarChart(hourLabels, newHourKeys, header)
 }
 
@@ -422,13 +462,13 @@ func ShowYearConsumption(profile Profile, year string) {
 		readingMonthMap[reading.Time.Month()] = reading.State
 	}
 
-	monthKeys := []time.Month{}
-	monthLabels := []float64{}
+	var monthKeys []time.Month
+	var monthLabels []float64
 	for k, _ := range readingMonthMap {
 		monthKeys = append(monthKeys, k)
 		monthLabels = append(monthLabels, readingMonthMap[k])
 	}
-	normMonthLabels := []string{}
+	var normMonthLabels []string
 	for _, k := range monthKeys {
 		normMonthLabels = append(normMonthLabels, k.String())
 	}
@@ -451,13 +491,13 @@ func ShowMonthConsumption(profile Profile, month string) {
 		readingMonthMap[reading.Time.Day()] = reading.State
 	}
 
-	daysKeys := []int{}
-	daysLabels := []float64{}
+	var daysKeys []int
+	var daysLabels []float64
 	for k, _ := range readingMonthMap {
 		daysKeys = append(daysKeys, k)
 		daysLabels = append(daysLabels, readingMonthMap[k])
 	}
-	normDaysLabels := []string{}
+	var normDaysLabels []string
 	for _, k := range daysKeys {
 		normDaysLabels = append(normDaysLabels, strconv.Itoa(k))
 	}

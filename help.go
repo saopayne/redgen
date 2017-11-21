@@ -6,6 +6,7 @@ var helpMsg = `
 Andy generates profiles for demonstration accounts
 	config start											Starts running the app, validate and send readings
 	config version											Show andy version
+	config preview "filename.json"							Show sample consumptions for the date
 	config profile											Path to demonstration profile file
 	config generate   										Generate a new profile configuration with the default name
 	config generate "my_new_config.json"					Generate a new profile configuration with the name

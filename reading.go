@@ -18,9 +18,15 @@ type Reading struct {
 
 func NewReading(date time.Time, unit string, interval, baseDailyConsumption, hourBase, weekBase, monthBase, variability, state float64) Reading {
 	baseDailyConsumptionDiv := baseDailyConsumption / 24 // 24 hours in a day
-	hourLowerBound := baseDailyConsumptionDiv - (variability / 10)
-	hourUpperBound := baseDailyConsumptionDiv + (variability / 10)
-	currentHour := RandomFloat64(hourLowerBound, hourUpperBound)
+	var currentHour float64
+
+	if variability > 0 {
+		hourLowerBound := baseDailyConsumptionDiv - (variability / 10)
+		hourUpperBound := baseDailyConsumptionDiv + (variability / 10)
+		currentHour = RandomFloat64(hourLowerBound, hourUpperBound)
+	} else {
+		currentHour = baseDailyConsumptionDiv
+	}
 	hourBasedInterval := 60 / interval
 	rawReading := float64(currentHour*hourBase*weekBase*monthBase) / hourBasedInterval
 	if rawReading < 0 {
@@ -42,6 +48,10 @@ func RandomFloat64(lo float64, hi float64) float64 {
 	rand.Seed(time.Now().UnixNano())
 	lowerBound := int(lo * 10000000)
 	upperBound := int(hi * 10000000)
-	randomNumber := rand.Intn(upperBound-lowerBound) + lowerBound
+	boundDifference := upperBound - lowerBound
+	if boundDifference < 0 {
+		boundDifference = 0
+	}
+	randomNumber := rand.Intn(boundDifference) + lowerBound
 	return float64(randomNumber) / 10000000
 }

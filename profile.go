@@ -176,7 +176,7 @@ func CreateDefaultProfile(name string) Profile {
 	}
 }
 
-func GenerateReadings(profile Profile) {
+func GenerateReadings(profile Profile, path string) {
 	var (
 		baseDailyConsumption = profile.BaseDailyConsumption
 		variability          = profile.Variability
@@ -199,9 +199,9 @@ func GenerateReadings(profile Profile) {
 		PrintJSONReading(reading)
 
 		state = profile.Readings[len(profile.Readings)-1].State
-		SaveReadings(profile, defaultReadingsPath)
+		SaveReadings(profile, path)
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Millisecond)
 		date = date.Add(time.Duration(profile.Interval) * time.Minute)
 	}
 }

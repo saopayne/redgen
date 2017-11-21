@@ -154,8 +154,8 @@ func ValidateMonthlyProfiles(p Profile) error {
 func ValidateVariability(p Profile) error {
 	var err error
 	variability := p.Variability
-	if variability < 0 || variability >= 10 {
-		err = fmt.Errorf("variability cannot be lower than 0 and greater than 10")
+	if variability < 0 || variability >= 100 {
+		err = fmt.Errorf("variability cannot be lower than 0 and greater than 100")
 	}
 	unit := p.Unit
 	baseDailyConsumption := GetValueforUnit(unit) * p.BaseDailyConsumption
@@ -323,7 +323,5 @@ func (p *Profile) Validate() error {
 		return err
 	}
 
-	message := fmt.Sprintf("The configuration for profile: %s is valid ", p.Name)
-	fmt.Println(message)
 	return nil
 }
