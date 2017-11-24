@@ -34,10 +34,10 @@ func RunAppCommands() (string, error) {
 		return CmdInit()
 	case andyConfigPreview.FullCommand():
 		if *andyConfigPreviewArg != "" {
-			CmdPreviewAction(*andyConfigPreviewArg)
+			CmdPreviewAction(*andyConfigPreviewArg, *andyConfigPreviewArgTime)
 			return "", nil
 		}
-		CmdPreviewAction(defaultProfileName)
+		CmdPreviewAction(defaultProfileName, *andyConfigPreviewArgTime)
 		return "", nil
 	case andyConfigSend.FullCommand():
 		if *andyConfigSendArg != "" {
@@ -107,7 +107,7 @@ func CmdProfileAction(filename string) {
 	GenerateReadings(profile, defaultReadingsPath)
 }
 
-func CmdPreviewAction(filename string) {
+func CmdPreviewAction(filename string, flag string) {
 	fileBytes, err := ioutil.ReadFile(filepath.Join(defaultProfilePath, filename))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -115,14 +115,29 @@ func CmdPreviewAction(filename string) {
 	profile, err := NewProfileFromJson(fileBytes)
 	profile.Validate()
 	fmt.Println("Generating sample consumption data for the profile")
-	profile = GeneratePreviewData(profile)
+	profile = GeneratePreviewData(profile, flag)
 
 	startTime := profile.Readings[0].Time.String()
 	formattedDay := startTime[:10]
-	ShowDayConsumption(profile, formattedDay)
+	formattedMonth := startTime[:7]
+	formattedYear := startTime[:4]
+	if flag == "day" {
+		fmt.Println("Show for day")
+		ShowDayConsumption(profile, formattedDay)
+	} else if flag == "month" {
+		fmt.Println("Show for month")
+
+		ShowMonthConsumption(profile, formattedMonth)
+	} else if flag == "year" {
+		fmt.Println("Show for year")
+		ShowYearConsumption(profile, formattedYear)
+	} else {
+		fmt.Println("back to default, showing for day")
+		ShowDayConsumption(profile, formattedDay)
+	}
 }
 
-func GeneratePreviewData(profile Profile) Profile {
+func GeneratePreviewData(profile Profile, timeFmt string) Profile {
 	var (
 		baseDailyConsumption = profile.BaseDailyConsumption
 		variability          = profile.Variability
@@ -133,8 +148,22 @@ func GeneratePreviewData(profile Profile) Profile {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+	var valuesToGenerate int
+	switch timeFmt {
+	case "day":
+		valuesToGenerate = 100
+		break
+	case "month":
+		valuesToGenerate = 3000
+		break
+	case "year":
+		valuesToGenerate = 36000
+		break
+	}
+
 	var readings []Reading
-	for i := 0; i < 200; i++ {
+	for i := 0; i < valuesToGenerate; i++ {
 		hourValue := strconv.Itoa(date.Hour())
 		weekValue := date.Weekday().String()
 		monthValue := date.Month().String()
@@ -215,7 +244,7 @@ func InitGenerator() (string, error) {
 }
 
 func SendReadingsOnStart() {
-	parseableFileNamesList, _ := GetAppendedParsedFileNames()
+	parseableFileNamesList := GetAppendedParsedFileNames()
 	// check if a file with the last reading exists, if not create and leave empty
 	// generate readings at the specified interval in the config and add to the /readings/filename_readings.json file
 	// when you stop the app, and start again, it should get the last reading, compare the time interval of the last reading with current time
@@ -271,8 +300,8 @@ func GetProfileFromJson(filepath string) (Profile, error) {
 	return profile, err
 }
 
-func GetAppendedParsedFileNames() (validFileNames []string, invalidFileNames []string) {
-	parseableNamesList, unparseableNamesList := SplitParseableConfigFiles()
+func GetAppendedParsedFileNames() (validFileNames []string) {
+	parseableNamesList, _ := SplitParseableConfigFiles()
 	os.MkdirAll(parseFolderPath, os.ModePerm)
 	if _, err := os.Stat(parseableFileFullPath); os.IsNotExist(err) {
 		_, err = os.Create(parseableFileFullPath)
@@ -281,26 +310,13 @@ func GetAppendedParsedFileNames() (validFileNames []string, invalidFileNames []s
 	err := ioutil.WriteFile(parseableFileFullPath, parseableNamesBytes, 0644)
 	checkWithPanic(err)
 
-	if _, err := os.Stat(unparseableFileFullPath); os.IsNotExist(err) {
-		_, err = os.Create(unparseableFileFullPath)
-	}
-	unparseableNamesBytes := EncodeFileNamesAsBytes(unparseableNamesList)
-	err = ioutil.WriteFile(unparseableFileFullPath, unparseableNamesBytes, 0644)
-	checkWithPanic(err)
-
 	parseableFileBytes, err := ioutil.ReadFile(parseableFileFullPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	parseableFileNamesList := DecodeBytesAsFileNames(parseableFileBytes)
 
-	unparseableFileBytes, err := ioutil.ReadFile(unparseableFileFullPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	unparseableFileNamesList := DecodeBytesAsFileNames(unparseableFileBytes)
-
-	return parseableFileNamesList, unparseableFileNamesList
+	return parseableFileNamesList
 }
 
 func SplitParseableConfigFiles() (parseableList []string, unparseableList []string) {
@@ -391,6 +407,20 @@ func ShowDateConsumption(filename string, date string) {
 	}
 }
 
+func GetValueForEnergyUnit(unit string) float64 {
+	var unitValueMap = map[string]float64{
+		"mW": 1 / 1000,
+		"W":  1,
+		"kW": 1000,
+		"MW": 1000000,
+		"GW": 100000000,
+	}
+	if unitValueMap[unit] != 0 {
+		return unitValueMap[unit]
+	}
+	return 0
+}
+
 func ShowDayConsumption(profile Profile, day string) {
 	mDay := day
 	intervalMultiplier := 60 / profile.Interval
@@ -434,25 +464,48 @@ func ShowDayConsumption(profile Profile, day string) {
 	PlotBarChart(hourLabels, newHourKeys, header)
 }
 
-func GetValueForEnergyUnit(unit string) float64 {
-	var unitValueMap = map[string]float64{
-		"mW": 1 / 1000,
-		"W":  1,
-		"kW": 1000,
-		"MW": 1000000,
-		"GW": 100000000,
+func ShowMonthConsumption(profile Profile, month string) {
+	mMonth := month
+	intervalMultiplier := 60 / profile.Interval
+	var newReadingValues []Reading
+	for _, reading := range profile.Readings {
+		if strings.Contains(reading.Time.String(), mMonth) {
+			reading.State = reading.State * intervalMultiplier
+			newReadingValues = append(newReadingValues, reading)
+		}
 	}
-	if unitValueMap[unit] != 0 {
-		return unitValueMap[unit]
+
+	readingMonthMap := make(map[int]float64)
+	for _, reading := range newReadingValues {
+		readingMonthMap[reading.Time.Day()] = reading.State
 	}
-	return 0
+
+	var daysKeys []int
+	var daysLabels []float64
+	for k, _ := range readingMonthMap {
+		daysKeys = append(daysKeys, k)
+		daysLabels = append(daysLabels, readingMonthMap[k])
+	}
+
+	sort.Ints(daysKeys)
+
+	var normDaysLabels []string
+	for _, k := range daysKeys {
+		normDaysLabels = append(normDaysLabels, strconv.Itoa(k))
+	}
+
+	normDaysKeys := GetIntSliceFromFloat(daysLabels)
+	header := fmt.Sprintf("Monthly Consumption for %s in (%s) ", mMonth, profile.Unit)
+	PlotBarChart(normDaysKeys, normDaysLabels, header)
 }
 
 func ShowYearConsumption(profile Profile, year string) {
 	mYear := year
+	intervalMultiplier := 60 / profile.Interval
 	var newReadingValues []Reading
 	for _, reading := range profile.Readings {
 		if strings.Contains(reading.Time.String(), mYear) {
+			reading.State = reading.State * intervalMultiplier
 			newReadingValues = append(newReadingValues, reading)
 		}
 	}
@@ -475,35 +528,4 @@ func ShowYearConsumption(profile Profile, year string) {
 	normMonthKeys := GetIntSliceFromFloat(monthLabels)
 	header := fmt.Sprintf("Monthly Consumption for %s in (%s) ", mYear, profile.Unit)
 	PlotBarChart(normMonthKeys, normMonthLabels, header)
-}
-
-func ShowMonthConsumption(profile Profile, month string) {
-	mMonth := month
-	var newReadingValues []Reading
-	for _, reading := range profile.Readings {
-		if strings.Contains(reading.Time.String(), mMonth) {
-			newReadingValues = append(newReadingValues, reading)
-		}
-	}
-
-	readingMonthMap := make(map[int]float64)
-	for _, reading := range newReadingValues {
-		readingMonthMap[reading.Time.Day()] = reading.State
-	}
-
-	var daysKeys []int
-	var daysLabels []float64
-	for k, _ := range readingMonthMap {
-		daysKeys = append(daysKeys, k)
-		daysLabels = append(daysLabels, readingMonthMap[k])
-	}
-	var normDaysLabels []string
-	for _, k := range daysKeys {
-		normDaysLabels = append(normDaysLabels, strconv.Itoa(k))
-	}
-
-	normDaysKeys := GetIntSliceFromFloat(daysLabels)
-	header := fmt.Sprintf("Monthly Consumption for %s in (%s) ", mMonth, profile.Unit)
-
-	PlotBarChart(normDaysKeys, normDaysLabels, header)
 }

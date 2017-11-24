@@ -23,10 +23,11 @@ var (
 	andyConfigGenerateArg = andyConfigGenerate.Arg("file_to_generate.json", "Create a default profile into the provided file").String()
 
 	// config preview "sample_file.json"
-	andyConfigPreview    = andyConfig.Command("preview", "Preview the default profile.")
-	andyConfigPreviewArg = andyConfigPreview.Arg("file_to_preview.json", "Preview the given profile.").String()
+	andyConfigPreview        = andyConfig.Command("preview", "Preview the default profile.")
+	andyConfigPreviewArg     = andyConfigPreview.Arg("file_to_preview.json", "Preview the given profile.").String()
+	andyConfigPreviewArgTime = andyConfigPreview.Flag("time", "Preview the given profile for a year|month|day.").String()
 
-	// config preview "sample_file.json"
+	// config validate "sample_file.json"
 	andyConfigValidate    = andyConfig.Command("validate", "Validates all configurations")
 	andyConfigValidateArg = andyConfigValidate.Arg("file_to_preview.json", "Validates the given configuration").String()
 

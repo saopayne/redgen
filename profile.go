@@ -117,6 +117,7 @@ func (p Profile) StartAt() (time.Time, float64, error) {
 }
 
 func WriteProfileToFile(profile Profile, path string, profileFile string) error {
+
 	jsonBytes, err := json.MarshalIndent(profile, "", "  ")
 	if err != nil {
 		return err
@@ -162,10 +163,20 @@ func CreateDefaultProfile(name string) Profile {
 	} else {
 		selectedName = name
 	}
+	var hourKeys []string
+	for k := range defaultHourlyProfile {
+		hourKeys = append(hourKeys, k)
+	}
+	sort.Strings(hourKeys)
+	modifiedHourlyProfiles := map[string]float64{}
+	for _, k := range hourKeys {
+		modifiedHourlyProfiles[k] = defaultHourlyProfile[k]
+	}
+
 	return Profile{
 		Name:                 selectedName,
 		BaseDailyConsumption: 18,
-		HourlyProfiles:       defaultHourlyProfile,
+		HourlyProfiles:       modifiedHourlyProfiles,
 		WeeklyProfiles:       defaultWeeklyProfile,
 		MonthlyProfiles:      defaultMonthlyProfile,
 		Variability:          5,

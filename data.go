@@ -96,7 +96,7 @@ func PlotBarChart(keys []int, labels []string, header string) {
 	bc.Height = 15
 	bc.DataLabels = labels
 	bc.BarGap = 1
-	bc.BarWidth = 6
+	bc.BarWidth = 4
 	bc.TextColor = termui.ColorGreen
 	bc.BarColor = termui.ColorRed
 	bc.NumColor = termui.ColorYellow
