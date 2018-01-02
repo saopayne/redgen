@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-go build -o andy
+go build -o redgen
