@@ -1,3 +1,5 @@
-# Andy
+# RedGen
 
-Andy is a random readings generator.
+RedGen is a random readings generator
+
+
