@@ -12,7 +12,7 @@ import (
 
 const (
 	UUID              = "99999999-0000-1111-2222-999999999999"
-	ApiUrl            = "https://api.energyanalytics.eu:41115/readings/" + UUID
+	ApiUrl            = "https://random.com/" + UUID
 	Authorization     = "Bearer: eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJqaXQiOiJmYjVhZGI0YjU5ODcwMWI4Iiwic2NwIjoibGEiLCJ2ZXIiOjEsInN1YiI6Ijk5OTk5OTk5LTAwMDAtMTExMS0yMjIyLTk5OTk5OTk5OTk5OSIsImV4cCI6MTUwOTk1MzA0Nn0.95WVy0oM-KqsTwt5TNnE87KtE4jDgPajgFEgbDvrzFWoiow__8T4mdDxetG5vbjwTSl1FPWq-Smea0tvT5dg"
 	HeaderContentType = "application/vnd.api+json"
 )

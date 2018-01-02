@@ -24,48 +24,48 @@ const maxInt32 = 1<<(32-1) - 1
 func RunAppCommands() (string, error) {
 	enteredCommand := kingpin.MustParse(app.Parse(os.Args[1:]))
 	switch enteredCommand {
-	case andyVersion.FullCommand():
+	case redgenVersion.FullCommand():
 		return helpVersion, nil
-	case andyConfigStart.FullCommand():
+	case redgenConfigStart.FullCommand():
 		return InitGenerator()
-	case andyConfigGenerate.FullCommand():
-		return CmdGenerate(*andyConfigGenerateArg)
-	case andyConfigInit.FullCommand():
+	case redgenConfigGenerate.FullCommand():
+		return CmdGenerate(*redgenConfigGenerateArg)
+	case redgenConfigInit.FullCommand():
 		return CmdInit()
-	case andyConfigPreview.FullCommand():
-		if *andyConfigPreviewArg != "" {
-			CmdPreviewAction(*andyConfigPreviewArg, *andyConfigPreviewArgTime)
+	case redgenConfigPreview.FullCommand():
+		if *redgenConfigPreviewArg != "" {
+			CmdPreviewAction(*redgenConfigPreviewArg, *redgenConfigPreviewArgTime)
 			return "", nil
 		}
-		CmdPreviewAction(defaultProfileName, *andyConfigPreviewArgTime)
+		CmdPreviewAction(defaultProfileName, *redgenConfigPreviewArgTime)
 		return "", nil
-	case andyConfigSend.FullCommand():
-		if *andyConfigSendArg != "" {
-			CmdSendReadingsToServer(*andyConfigSendArg)
+	case redgenConfigSend.FullCommand():
+		if *redgenConfigSendArg != "" {
+			CmdSendReadingsToServer(*redgenConfigSendArg)
 			return "", nil
 		}
 		return helpMsg, nil
-	case andyConfigValidate.FullCommand():
-		if *andyConfigValidateArg != "" {
-			CmdValidateAction(*andyConfigValidateArg, true)
+	case redgenConfigValidate.FullCommand():
+		if *redgenConfigValidateArg != "" {
+			CmdValidateAction(*redgenConfigValidateArg, true)
 		}
-		CmdValidateAction(*andyConfigValidateArg, false)
+		CmdValidateAction(*redgenConfigValidateArg, false)
 		return "", nil
-	case andyConfigProfile.FullCommand():
-		if *andyConfigProfileArg != "" {
-			CmdProfileAction(*andyConfigProfileArg)
+	case redgenConfigProfile.FullCommand():
+		if *redgenConfigProfileArg != "" {
+			CmdProfileAction(*redgenConfigProfileArg)
 			return "", nil
 		}
 		return helpMsg, nil
-	case andyConfigShow.FullCommand():
-		if *andyConfigShowFileName != "" {
-			if *andyConfigShowDateFlag != "" {
-				ShowDateConsumption(*andyConfigShowFileName, *andyConfigShowDateFlag)
+	case redgenConfigShow.FullCommand():
+		if *redgenConfigShowFileName != "" {
+			if *redgenConfigShowDateFlag != "" {
+				ShowDateConsumption(*redgenConfigShowFileName, *redgenConfigShowDateFlag)
 			}
 			return "", nil
 		}
 		return helpMsg, nil
-	case andyConfigClear.FullCommand():
+	case redgenConfigClear.FullCommand():
 		return "", nil
 	default:
 		return helpMsg, fmt.Errorf("unknown command: %s", enteredCommand)

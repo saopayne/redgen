@@ -3,45 +3,45 @@ package main
 import "gopkg.in/alecthomas/kingpin.v2"
 
 var (
-	app        = kingpin.New("andy", "Andy random readings generator")
-	andyConfig = app.Command("config", "Work with a configuration")
+	app        = kingpin.New("redgen", "RedGen random readings generator")
+	redgenConfig = app.Command("config", "Work with a configuration")
 
 	// config clear
-	andyConfigClear = andyConfig.Command("clear", "Clears the profiles folder")
+	redgenConfigClear = redgenConfig.Command("clear", "Clears the profiles folder")
 
 	// config version
-	andyVersion = andyConfig.Command("version", "Display the version of andy")
+	redgenVersion = redgenConfig.Command("version", "Display the version of redgen")
 
 	// config init
-	andyConfigInit = andyConfig.Command("init", "Create a default profile.")
+	redgenConfigInit = redgenConfig.Command("init", "Create a default profile.")
 
 	// config start
-	andyConfigStart = andyConfig.Command("start", "Start running the application")
+	redgenConfigStart = redgenConfig.Command("start", "Start running the application")
 
 	// config generate "sample_file.json"
-	andyConfigGenerate    = andyConfig.Command("generate", "Create a default profile.")
-	andyConfigGenerateArg = andyConfigGenerate.Arg("file_to_generate.json", "Create a default profile into the provided file").String()
+	redgenConfigGenerate    = redgenConfig.Command("generate", "Create a default profile.")
+	redgenConfigGenerateArg = redgenConfigGenerate.Arg("file_to_generate.json", "Create a default profile into the provided file").String()
 
 	// config preview "sample_file.json"
-	andyConfigPreview        = andyConfig.Command("preview", "Preview the default profile.")
-	andyConfigPreviewArg     = andyConfigPreview.Arg("file_to_preview.json", "Preview the given profile.").String()
-	andyConfigPreviewArgTime = andyConfigPreview.Flag("time", "Preview the given profile for a year|month|day.").String()
+	redgenConfigPreview        = redgenConfig.Command("preview", "Preview the default profile.")
+	redgenConfigPreviewArg     = redgenConfigPreview.Arg("file_to_preview.json", "Preview the given profile.").String()
+	redgenConfigPreviewArgTime = redgenConfigPreview.Flag("time", "Preview the given profile for a year|month|day.").String()
 
 	// config validate "sample_file.json"
-	andyConfigValidate    = andyConfig.Command("validate", "Validates all configurations")
-	andyConfigValidateArg = andyConfigValidate.Arg("file_to_preview.json", "Validates the given configuration").String()
+	redgenConfigValidate    = redgenConfig.Command("validate", "Validates all configurations")
+	redgenConfigValidateArg = redgenConfigValidate.Arg("file_to_preview.json", "Validates the given configuration").String()
 
 	// config profile "sample_file.json"
-	andyConfigProfile    = andyConfig.Command("profile", "")
-	andyConfigProfileArg = andyConfigProfile.Arg("profile.json", "Validates the given configuration").String()
+	redgenConfigProfile    = redgenConfig.Command("profile", "")
+	redgenConfigProfileArg = redgenConfigProfile.Arg("profile.json", "Validates the given configuration").String()
 
 	// config send
-	andyConfigSend    = andyConfig.Command("send", "A readings file should be sent along with this command")
-	andyConfigSendArg = andyConfigSend.Arg("file_to_send.json", "Send the readings in the file specified to the server").String()
+	redgenConfigSend    = redgenConfig.Command("send", "A readings file should be sent along with this command")
+	redgenConfigSendArg = redgenConfigSend.Arg("file_to_send.json", "Send the readings in the file specified to the server").String()
 
 	// config show
-	andyConfigShow = andyConfig.Command("show", "")
+	redgenConfigShow = redgenConfig.Command("show", "")
 
-	andyConfigShowFileName = andyConfigShow.Arg("filename", "Add the readings filename to show").String()
-	andyConfigShowDateFlag = andyConfigShow.Flag("date", "Add the year-month-day you wish to display consumption for").String()
+	redgenConfigShowFileName = redgenConfigShow.Arg("filename", "Add the readings filename to show").String()
+	redgenConfigShowDateFlag = redgenConfigShow.Flag("date", "Add the year-month-day you wish to display consumption for").String()
 )

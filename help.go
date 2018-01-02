@@ -3,7 +3,7 @@ package main
 var helpVersion = "v0.1"
 
 var helpMsg = `
-Andy generates profiles for demonstration accounts
+RedGen generates profiles for demonstration accounts
 	config start											Starts running the app, validate and send readings
 	config version											Show andy version
 	config preview "filename.json"							Show sample consumptions for the date
